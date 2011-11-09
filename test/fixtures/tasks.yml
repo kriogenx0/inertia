@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/Fixtures.html
+
+one:
+  name: MyString
+  description: MyString
+  eta: MyString
+  parent: 
+  status: 
+
+two:
+  name: MyString
+  description: MyString
+  eta: MyString
+  parent: 
+  status: 
