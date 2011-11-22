@@ -2,13 +2,28 @@
 <html>
 <head>
   <title>Inertia</title>
+  <%= stylesheet_link_tag    "jandi.css" %>
   <%= stylesheet_link_tag    "application" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
 </head>
 <body>
+  <div class="layout-width">
+    <div class="header">
+      <div class="nav">
+        <a href="">Dashboard</a>
+        <a href="">My Tasks</a>
+        <a href="">Projects</a>
+      </div>
+    </div>
 
-<%= yield %>
+    <div class="content">
+
+      <%= yield %>
+
+    </div>
+
+  </div>
 
 </body>
 </html>
