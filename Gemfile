@@ -1,6 +1,6 @@
 source 'http://rubygems.org'
 
-gem 'rails', '3.1.0'
+gem 'rails', '3.0.7'
 
 gem 'haml', '3.1.2'
 gem 'sass', '3.1.3'
@@ -35,7 +35,7 @@ gem 'rake'#, '0.8.7'
 # To use debugger
 gem 'ruby-debug19', :require => 'ruby-debug'
 
-group :development, :test do
+# group :development, :test do
 #  gem 'capybara', '0.4.1.2'
-  # gem 'cucumber-rails', '0.4.0'
-end
+#  gem 'cucumber-rails', '0.4.0'
+# end
