@@ -1,18 +1,13 @@
 source 'http://rubygems.org'
 
-gem 'rails', '3.0.7'
+gem 'rails', '3.1.3'
 
-# gem 'haml', '3.1.2'
-# gem 'sass', '3.1.3'
-# gem 'haml-rails', '0.3.4'
+gem 'haml', '3.1.2'
+gem 'sass', '3.1.3'
+gem 'haml-rails', '0.3.4'
 # gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
-
-# Bundle edge Rails instead:
-# gem 'rails',     :git => 'git://github.com/rails/rails.git'
-
 # gem 'sqlite3'
 gem 'pg' #POSTGRES
-
 # gem 'decent_exposure', '1.0.1'
 # gem 'rake'#, '0.8.7'
 
