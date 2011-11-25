@@ -1,25 +1,27 @@
-# SQLite version 3.x
-#   gem install sqlite3
-#
-#   Ensure the SQLite 3 gem is defined in your Gemfile
-#   gem 'sqlite3'
 creds: &creds
   adapter: postgresql
   host: localhost
-  user: admin
-  passowrd: admin
+  username: admin
+  password: admin
+  min_message: warning
 
-development:
-  database: dev
+global: &global
+  database: inertia_dev
   <<: *creds
 
-# Warning: The database defined as "test" will be erased and
-# re-generated from your development database when you run "rake".
-# Do not set this db to the same as development or production.
+development:
+  adapter: postgresql
+  encoding: unicode
+  database: inertia_dev
+  username: admin
+  password: admin
+
 test:
-  database: testing
+  adapter: postgresql
+  database: inertia_dev
   <<: *creds
 
 production:
-  database: prod
+  adapter: postgresql
+  database: inertia
   <<: *creds
