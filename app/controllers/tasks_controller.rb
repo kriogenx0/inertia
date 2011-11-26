@@ -2,6 +2,7 @@ class TasksController < ApplicationController
   # GET /tasks
   # GET /tasks.json
   def index
+    @users = User.all
     @tasks = Task.all
 
     respond_to do |format|
