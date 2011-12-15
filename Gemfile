@@ -12,12 +12,12 @@ group :assets do
 #  gem 'uglifier'
 end
 
-# gem 'haml'
-# gem 'sass'
+gem 'haml'
+gem 'sass'
 #gem 'haml-rails', '0.3.4'
 # gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
 # gem 'sqlite3'
-# gem 'decent_exposure', '1.0.1'
+gem 'decent_exposure'
 # gem 'rake'#, '0.8.7'
 # gem 'jquery-rails'
 
