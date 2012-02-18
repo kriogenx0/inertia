@@ -2,8 +2,16 @@ source 'http://rubygems.org'
 
 gem 'rails', '3.1.0'
 
-# POSTGRES
+gem 'rake'
+
+# OTHER LIBS
 gem 'pg'
+#gem 'devise'
+#gem 'haml'
+#gem 'sass'
+#gem 'haml-rails'
+#gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+#gem 'decent_exposure'
 
 # Gems used only for assets and not required in production environments by default.
 group :assets do
@@ -12,12 +20,9 @@ group :assets do
 #  gem 'uglifier'
 end
 
-gem 'haml'
-gem 'sass'
 #gem 'haml-rails', '0.3.4'
-# gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+
 # gem 'sqlite3'
-gem 'decent_exposure'
 # gem 'rake'#, '0.8.7'
 # gem 'jquery-rails'
 
