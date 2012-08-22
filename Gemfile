@@ -1,6 +1,6 @@
 source 'http://rubygems.org'
 
-gem 'rails', '3.0.7'
+gem 'rails', '3.2'
 
 # gem 'haml', '3.1.2'
 # gem 'sass', '3.1.3'
