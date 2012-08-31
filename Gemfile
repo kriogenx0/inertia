@@ -2,20 +2,18 @@ source 'http://rubygems.org'
 
 gem 'rails', '3.2'
 
-# gem 'haml', '3.1.2'
-# gem 'sass', '3.1.3'
-# gem 'haml-rails', '0.3.4'
-# gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+# DATABASE
+#gem 'sqlite3'
+#gem 'pg'
+gem 'mysql2'
 
-# Bundle edge Rails instead:
-# gem 'rails',     :git => 'git://github.com/rails/rails.git'
-
-# gem 'sqlite3'
-gem 'pg' #POSTGRES
-
-# gem 'decent_exposure', '1.0.1'
-# gem 'rake'#, '0.8.7'
-
+# FRONT END
+gem 'jquery-rails'
+gem 'sass-rails'
+gem 'coffee-rails'
+gem 'hogan_assets'
+gem 'stache'
+gem 'rails-backbone'
 # Gems used only for assets and not required
 # in production environments by default.
 #group :assets do
@@ -23,6 +21,18 @@ gem 'pg' #POSTGRES
 #  gem 'coffee-rails', "~> 3.1.0"
 #  gem 'uglifier'
 #end
+
+
+# gem 'haml', '3.1.2'
+# gem 'sass', '3.1.3'
+# gem 'haml-rails', '0.3.4'
+# gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+
+# Bundle edge Rails instead:
+# gem 'rails',     :git => 'git://github.com/rails/rails.git'
+# gem 'decent_exposure', '1.0.1'
+# gem 'rake'#, '0.8.7'
+
 
 # gem 'jquery-rails'
 
