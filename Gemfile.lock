@@ -30,10 +30,27 @@ GEM
       multi_json (~> 1.0)
     arel (3.0.2)
     builder (3.0.0)
+    coffee-rails (3.2.2)
+      coffee-script (>= 2.2.0)
+      railties (~> 3.2.0)
+    coffee-script (2.2.0)
+      coffee-script-source
+      execjs
+    coffee-script-source (1.3.3)
+    ejs (1.0.0)
     erubis (2.7.0)
+    execjs (1.4.0)
+      multi_json (~> 1.0)
     hike (1.2.1)
+    hogan_assets (1.3.2)
+      execjs (>= 1.2.9)
+      sprockets (>= 2.0.3)
+      tilt (>= 1.3.3)
     i18n (0.6.0)
     journey (1.0.4)
+    jquery-rails (2.1.1)
+      railties (>= 3.1.0, < 5.0)
+      thor (~> 0.14)
     json (1.7.5)
     mail (2.4.4)
       i18n (>= 0.4.0)
@@ -41,7 +58,7 @@ GEM
       treetop (~> 1.4.8)
     mime-types (1.19)
     multi_json (1.3.6)
-    pg (0.11.0)
+    mysql2 (0.3.11)
     polyglot (0.3.3)
     rack (1.4.1)
     rack-cache (1.2)
@@ -58,6 +75,10 @@ GEM
       activesupport (= 3.2.0)
       bundler (~> 1.0)
       railties (= 3.2.0)
+    rails-backbone (0.7.2)
+      coffee-script (~> 2.2.0)
+      ejs (~> 1.0.0)
+      railties (>= 3.1.0)
     railties (3.2.0)
       actionpack (= 3.2.0)
       activesupport (= 3.2.0)
@@ -68,10 +89,16 @@ GEM
     rake (0.9.2.2)
     rdoc (3.12)
       json (~> 1.4)
+    sass (3.2.1)
+    sass-rails (3.2.5)
+      railties (~> 3.2.0)
+      sass (>= 3.1.10)
+      tilt (~> 1.3)
     sprockets (2.1.3)
       hike (~> 1.2)
       rack (~> 1.0)
       tilt (~> 1.1, != 1.3.0)
+    stache (0.9.1)
     thor (0.14.6)
     tilt (1.3.3)
     treetop (1.4.10)
@@ -83,5 +110,11 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  pg
+  coffee-rails
+  hogan_assets
+  jquery-rails
+  mysql2
   rails (= 3.2)
+  rails-backbone
+  sass-rails
+  stache
