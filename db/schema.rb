@@ -13,15 +13,15 @@
 
 ActiveRecord::Schema.define(:version => 20111121231543) do
 
-  create_table "clients", :force => true do |t|
-    t.string "name"
-    t.string "description"
-  end
-
   create_table "comments", :force => true do |t|
     t.string   "description"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",  :null => false
+    t.datetime "updated_at",  :null => false
+  end
+
+  create_table "projects", :force => true do |t|
+    t.string "name"
+    t.string "description"
   end
 
   create_table "tasks", :force => true do |t|
@@ -30,15 +30,15 @@ ActiveRecord::Schema.define(:version => 20111121231543) do
     t.string   "eta"
     t.integer  "parent"
     t.integer  "status"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",  :null => false
+    t.datetime "updated_at",  :null => false
   end
 
   create_table "users", :force => true do |t|
     t.string   "name"
     t.string   "email"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
   end
 
 end

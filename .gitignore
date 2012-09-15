@@ -34,3 +34,7 @@ specifications
 cache
 dump.rdb
 panther_line
+
+# VIM
+*.un~
+*.un

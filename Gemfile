@@ -14,6 +14,11 @@ gem 'coffee-rails'
 gem 'hogan_assets'
 gem 'stache'
 gem 'rails-backbone'
+
+group :development, :test do
+  gem 'cucumber-rails', :require => false
+end
+
 # Gems used only for assets and not required
 # in production environments by default.
 #group :assets do
