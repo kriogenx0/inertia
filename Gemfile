@@ -15,6 +15,11 @@ gem 'hogan_assets'
 gem 'stache'
 gem 'rails-backbone'
 
+gem 'haml', '3.1.2'
+gem 'sass', '3.1.3'
+gem 'haml-rails', '0.3.4'
+gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+
 group :development, :test do
   gem 'cucumber-rails', :require => false
 end
@@ -27,11 +32,6 @@ end
 #  gem 'uglifier'
 #end
 
-
-# gem 'haml', '3.1.2'
-# gem 'sass', '3.1.3'
-# gem 'haml-rails', '0.3.4'
-# gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
 
 # Bundle edge Rails instead:
 # gem 'rails',     :git => 'git://github.com/rails/rails.git'

@@ -1,10 +1,11 @@
 Inertia::Application.routes.draw do
+  root to: 'tasklist#index'
+
   resources :users
   resources :comments
   resources :tasks
   resources :tasklist
 
-  root to: 'tasklist#index'
 
   # The priority is based upon order of creation:
   # first created -> highest priority.
