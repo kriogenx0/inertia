@@ -1,30 +1,32 @@
-<h1>Listing tasks</h1>
+<h1>Tasks</h1>
 
-<table>
-  <tr>
-    <th>Name</th>
-    <th>Description</th>
-    <th>Eta</th>
-    <th>Parent</th>
-    <th>Status</th>
-    <th></th>
-    <th></th>
-    <th></th>
-  </tr>
-
-<% @tasks.each do |task| %>
-  <tr>
-    <td><%= task.name %></td>
-    <td><%= task.description %></td>
-    <td><%= task.eta %></td>
-    <td><%= task.parent %></td>
-    <td><%= task.status %></td>
-    <td><%= link_to 'Show', task %></td>
-    <td><%= link_to 'Edit', edit_task_path(task) %></td>
-    <td><%= link_to 'Destroy', task, confirm: 'Are you sure?', method: :delete %></td>
-  </tr>
-<% end %>
-</table>
+<div class="table-data">
+	<table>
+	  <tr>
+	    <th>Name</th>
+	    <th>Description</th>
+	    <th>Eta</th>
+	    <th>Parent</th>
+	    <th>Status</th>
+	    <th></th>
+	    <th></th>
+	    <th></th>
+	  </tr>
+	
+	<% @tasks.each do |task| %>
+	  <tr>
+	    <td><%= task.name %></td>
+	    <td><%= task.description %></td>
+	    <td><%= task.eta %></td>
+	    <td><%= task.parent %></td>
+	    <td><%= task.status %></td>
+	    <td><%= link_to 'Show', task %></td>
+	    <td><%= link_to 'Edit', edit_task_path(task) %></td>
+	    <td><%= link_to 'Destroy', task, confirm: 'Are you sure?', method: :delete %></td>
+	  </tr>
+	<% end %>
+	</table>
+</div>
 
 <br />
 
