@@ -1,34 +1,10 @@
-class TasksController < ApplicationController
+class TasklistController < ApplicationController
   def index
-    @users = User.all
     @tasks = Task.all
-
-    respond_to do |format|
-      format.html # index.html.erb
-      format.json { render json: @tasks }
-    end
   end
 
-  def show
-    @task = Task.find(params[:id])
-
-    respond_to do |format|
-      format.html # show.html.erb
-      format.json { render json: @task }
-    end
-  end
-
-  def new
-    @task = Task.new
-
-    respond_to do |format|
-      format.html # new.html.erb
-      format.json { render json: @task }
-    end
-  end
-
-  def edit
-    @task = Task.find(params[:id])
+  def detail
+    @tasklist = Tasklist.all
   end
 
   def create

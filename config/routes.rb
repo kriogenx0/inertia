@@ -1,13 +1,15 @@
 Inertia::Application.routes.draw do
   resources :clients
 
-  resources :users
-
-  resources :comments
 
   resources :tasks
-
   resources :tasklist
+  resources :users
+  resources :comments
+  
+  
+  
+  root :to => 'tasklist#index'
 
   # The priority is based upon order of creation:
   # first created -> highest priority.

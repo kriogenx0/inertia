@@ -1,27 +1,28 @@
-creds: &creds
-  adapter: postgresql
-  host: localhost
+#creds: &creds
+  #adapter: postgresql
+  #host: localhost
+  #user: admin
+  #passowrd: admin
+
+  #adapter: mysql2
+  #host: 127.0.0.1
+  #user: root
+  #password:
   username: admin
   password: admin
   min_message: warning
-
-global: &global
-  database: inertia_dev
-  <<: *creds
+  adapter: mysql2
+  host: mysql8.websitesource.net
+  username: kriogen_admin
+  password: m3d1ag
 
 development:
-  adapter: postgresql
-  encoding: unicode
-  database: inertia_dev
-  username: admin
-  password: admin
-
-test:
-  adapter: postgresql
-  database: inertia_dev
   <<: *creds
+  database: kriogen_inertia
+
+#test:
+#  database: kriogen_inert_t
 
 production:
-  adapter: postgresql
-  database: inertia
   <<: *creds
+  database: kriogen_inertia

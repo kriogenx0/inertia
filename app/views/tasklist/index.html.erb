@@ -1,4 +1,4 @@
-<h1>Tasks</h1>
+<h1>Tasklist</h1>
 
 <div class="table-data">
 	<table>
@@ -26,8 +26,8 @@
 	  </tr>
 	<% end %>
 	</table>
+
+	<div class="buttons-row">
+		<a href="<%= new_task_path %>" class="button button-action"><b><i><s>New Task</s></i></b></a>
+	</div>
 </div>
-
-<br />
-
-<%= link_to 'New Task', new_task_path %>

@@ -43,6 +43,19 @@ table
 	border-collapse:collapse;
 	border-spacing:0;
 }
+input:focus,
+select:focus,
+a:focus
+{
+	outline: 0 none;
+}
+input::-moz-focus-inner,
+select::-moz-focus-inner,
+a::-moz-focus-inner,
+button::-moz-focus-inner
+{
+ 	border: 0;
+}
 input,
 textarea,
 select
@@ -148,7 +161,13 @@ h6
 {
 	font-size: 14px;
 }
-/* COMMON CLASSES */
+sup
+{
+	vertical-align: super;
+	line-height: inherit;
+}
+
+/* JANDI UI */
 .clear
 {
 	clear: both;
@@ -158,8 +177,7 @@ h6
 {
 	display: none;	
 }
-.page-width,
-.layout-width
+.page-width
 {
 	width: 960px;
 	margin: 0 auto;
@@ -193,14 +211,22 @@ h6
 {
 	width: 33%;	
 }
+.twoThirds-left,
+.twoThirds-right
+{
+	width: 66%;
+}
 .half-left,
-.third-left
+.third-left,
+.twoThirds-left
 {
 	float: left;	
 }
 .half-right,
-.third-right
+.third-right,
+.twoThirds-right
 {
 	float: right;
 	text-align: right;
 }
+

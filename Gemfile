@@ -1,30 +1,73 @@
 source 'http://rubygems.org'
 
-gem 'rails', '3.1.0'
+# Convenience
+gem 'bundler'
+gem 'heroku'
+
+gem 'rails', '3.2'
+gem 'railties'
 
 gem 'rake'
 
+# DATABASE
+#gem 'sqlite3'
+#gem 'pg'
+gem 'mysql2'
+
+# Bundle edge Rails instead:
+# gem 'rails',     :git => 'git://github.com/rails/rails.git'
 # OTHER LIBS
-gem 'pg'
+#gem 'pg'
 #gem 'devise'
 #gem 'haml'
 #gem 'sass'
 #gem 'haml-rails'
 #gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
 #gem 'decent_exposure'
+# FRONT END
+gem 'sprockets'
+gem 'jquery-rails'
+gem 'sass-rails'
+gem 'coffee-rails'
+gem 'hogan_assets'
+gem 'stache'
+gem 'rails-backbone'
 
-# Gems used only for assets and not required in production environments by default.
-group :assets do
+# gem 'sqlite3'
+gem 'pg' #POSTGRES
+
+# gem 'decent_exposure', '1.0.1'
+# gem 'rake'#, '0.8.7'
+
+# Gems used only for assets and not required
+# in production environments by default.
+#group :assets do
+gem 'haml'
+gem 'sass'
+gem 'haml-rails'
+#gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+
+# TESTING
+group :development, :test do
+  gem 'cucumber-rails', :require => false
+end
+
+# Gems used only for assets and not required
+# in production environments by default.
+#group :assets do
 #  gem 'sass-rails', "  ~> 3.1.0"
 #  gem 'coffee-rails', "~> 3.1.0"
 #  gem 'uglifier'
-end
+#end
 
 #gem 'haml-rails', '0.3.4'
 
 # gem 'sqlite3'
+# Bundle edge Rails instead:
+# gem 'rails',     :git => 'git://github.com/rails/rails.git'
+# gem 'decent_exposure', '1.0.1'
 # gem 'rake'#, '0.8.7'
-# gem 'jquery-rails'
+
 
 # Use unicorn as the web server
 # gem 'unicorn'
