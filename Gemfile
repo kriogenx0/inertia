@@ -4,79 +4,53 @@ source 'http://rubygems.org'
 gem 'bundler'
 gem 'heroku'
 
-gem 'rails', '3.2'
+# Rails
+gem 'rails', '3.2.0'
+# gem 'rails',     :git => 'git://github.com/rails/rails.git'
 gem 'railties'
-
 gem 'rake'
 
 # DATABASE
 #gem 'sqlite3'
-#gem 'pg'
+#gem 'pg' #POSTGRES
 gem 'mysql2'
 
-# Bundle edge Rails instead:
-# gem 'rails',     :git => 'git://github.com/rails/rails.git'
 # OTHER LIBS
-#gem 'pg'
 #gem 'devise'
-#gem 'haml'
-#gem 'sass'
-#gem 'haml-rails'
-#gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
-#gem 'decent_exposure'
-# FRONT END
-gem 'sprockets'
-gem 'jquery-rails'
-gem 'sass-rails'
-gem 'coffee-rails'
-gem 'hogan_assets'
-gem 'stache'
-gem 'rails-backbone'
-
-# gem 'sqlite3'
-gem 'pg' #POSTGRES
-
 # gem 'decent_exposure', '1.0.1'
-# gem 'rake'#, '0.8.7'
+#gem 'decent_exposure'
 
+# FRONT END
 # Gems used only for assets and not required
 # in production environments by default.
 #group :assets do
 gem 'haml'
-gem 'sass'
 gem 'haml-rails'
+gem 'sass'
+gem 'sass-rails'
 #gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
+gem 'sprockets'
+gem 'jquery-rails'
+gem 'coffee-rails'
+gem 'hogan_assets'
+#gem 'stache'
+#gem 'rails-backbone'
+#gem 'uglifier'
+#end
 
-# TESTING
+# Testing
 group :development, :test do
   gem 'cucumber-rails', :require => false
 end
 
-# Gems used only for assets and not required
-# in production environments by default.
-#group :assets do
-#  gem 'sass-rails', "  ~> 3.1.0"
-#  gem 'coffee-rails', "~> 3.1.0"
-#  gem 'uglifier'
-#end
-
-#gem 'haml-rails', '0.3.4'
-
-# gem 'sqlite3'
-# Bundle edge Rails instead:
-# gem 'rails',     :git => 'git://github.com/rails/rails.git'
-# gem 'decent_exposure', '1.0.1'
-# gem 'rake'#, '0.8.7'
-
-
+# Web Servers
 # Use unicorn as the web server
 # gem 'unicorn'
 
 # To use debugger
-gem 'ruby-debug19', :require => 'ruby-debug'
+#gem 'ruby-debug19', :require => 'ruby-debug'
 
-group :development, :test do
+#group :development, :test do
 #  gem 'capybara', '0.4.1.2'
 #  gem 'cucumber-rails', '0.4.0'
-end
-
+#end
