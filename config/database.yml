@@ -1,33 +1,29 @@
-# SQLite version 3.x
-#   gem install sqlite3
-#
-#   Ensure the SQLite 3 gem is defined in your Gemfile
-#   gem 'sqlite3'
-creds: &creds
+#creds: &creds
   #adapter: postgresql
   #host: localhost
   #user: admin
   #passowrd: admin
 
+  #adapter: mysql2
+  #host: 127.0.0.1
+  #user: root
+  #password:
+
   adapter: mysql2
-  host: 127.0.0.1
-  user: root
-  password:
+  host: mysql8.websitesource.net
+  username: kriogen_admin
+  password: m3d1ag
 
 development:
-  adapter: mysql2
-  host: 127.0.0.1
-  user: root
-  password:
-  database: inertia_dev
+  <<: *creds
+  database: kriogen_inertia
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
-test:
-  <<: *creds
-  database: inertia_testing
+#test:
+#  database: kriogen_inert_t
 
 production:
   <<: *creds
-  database: inertia_prod
+  database: kriogen_inertia

@@ -2,12 +2,15 @@ source 'http://rubygems.org'
 
 gem 'rails', '3.2'
 
+gem 'rake'
+
 # DATABASE
 #gem 'sqlite3'
 #gem 'pg'
 gem 'mysql2'
 
 # FRONT END
+gem 'sprockets'
 gem 'jquery-rails'
 gem 'sass-rails'
 gem 'coffee-rails'
@@ -20,6 +23,7 @@ gem 'sass'
 gem 'haml-rails'
 #gem 'hassle', :git => 'git://github.com/jasoncodes/hassle.git'
 
+# TESTING
 group :development, :test do
   gem 'cucumber-rails', :require => false
 end
@@ -38,8 +42,6 @@ end
 # gem 'decent_exposure', '1.0.1'
 # gem 'rake'#, '0.8.7'
 
-
-# gem 'jquery-rails'
 
 # Use unicorn as the web server
 # gem 'unicorn'

@@ -159,6 +159,8 @@ DEPENDENCIES
   mysql2
   rails (= 3.2)
   rails-backbone
+  rake
   sass
   sass-rails
+  sprockets
   stache
