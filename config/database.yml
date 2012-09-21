@@ -1,18 +1,18 @@
 creds: &creds
-  #adapter: postgresql
-  #host: localhost
-  #user: admin
-  #passowrd: admin
+  adapter: postgresql
+  host: localhost
+  user: admin
+  passowrd: admin
 
   #adapter: mysql2
   #host: 127.0.0.1
   #user: root
   #password:
 
-  adapter: mysql2
-  host: mysql8.websitesource.net
-  username: kriogen_admin
-  password: m3d1ag
+  #adapter: mysql2
+  #host: mysql8.websitesource.net
+  #username: kriogen_admin
+  #password: m3d1ag
 
   #min_message: warning
 
