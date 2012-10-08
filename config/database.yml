@@ -1,28 +1,29 @@
 creds: &creds
+  encoding: unicode
+  pool: 5
+  min_message: warning
+
   adapter: postgresql
-  host: localhost
-  user: admin
-  passowrd: admin
+#  host: localhost
+#  username: root
+#  passowrd: admin
 
-  #adapter: mysql2
-  #host: 127.0.0.1
-  #user: root
-  #password:
+  host: ec2-54-243-250-115.compute-1.amazonaws.com
+#  user: jlaqchmrcqhbxk
+  username: jlaqchmrcqhbxk
+  password: qZ_wQJS8lNI4hhW2m3RCru3OUg
+  database: d25crtg5d54amo
+  port: 5432
 
-  #adapter: mysql2
-  #host: mysql8.websitesource.net
-  #username: kriogen_admin
-  #password: m3d1ag
 
-  #min_message: warning
 
 development:
   <<: *creds
-  database: kriogen_inertia
+#  database: kriogen_inertia_dev
 
 #test:
 #  database: kriogen_inert_t
 
 production:
   <<: *creds
-  database: kriogen_inertia
+#  database: kriogen_inertia
