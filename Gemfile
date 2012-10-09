@@ -37,7 +37,7 @@ gem 'hogan_assets'
 gem 'therubyracer'
 #gem 'stache'
 #gem 'rails-backbone'
-#gem 'uglifier'
+gem 'uglifier'
 #end
 
 # Testing
