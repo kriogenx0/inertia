@@ -1,11 +1,10 @@
 source 'http://rubygems.org'
 
 # Convenience
-gem 'bundler'
 gem 'heroku'
 
 # Rails
-gem 'rails', '3.2.0'
+gem 'rails', '3.2.8'
 # gem 'rails',     :git => 'git://github.com/rails/rails.git'
 gem 'railties'
 gem 'rake'
