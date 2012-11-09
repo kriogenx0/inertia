@@ -41,10 +41,9 @@ gem 'jquery-rails'
 
 # Testing
 gem 'rspec-rails'
-group :development, :test do
+group :test do
   gem 'cucumber-rails'
   gem 'database_cleaner'
-  gem 'cucumber-rails'
 end
 
 # To use debugger

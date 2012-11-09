@@ -1,29 +1,44 @@
-creds: &creds
+base: &base
   encoding: unicode
   pool: 5
   min_message: warning
-
   adapter: postgresql
-#  host: localhost
-#  username: root
-#  passowrd: admin
 
+local: &local
+  host: localhost
+  username: root
+  passowrd: admin
+
+heroku_charcoal: &heroku_charcoal
+  host: ec2-23-21-209-85.compute-1.amazonaws.com
+  database: d94lb1fsbvcopf
+  port: 5432
+  username: yyhbjsgkolalma
+  password: GEOJyNzN_ZcG7UPlY7YYKf_TiW
+
+heroku_jade: &heroku_jade
+  host: ec2-107-21-99-45.compute-1.amazonaws.com
+  database: dagiu9bqpmkdps
+  port: 5432
+  username: kjssnyoyimezkn
+  password: WwQfSmfxm217TtKaIGWA1RliA-
+
+heroku_orange: &orange
   host: ec2-54-243-250-115.compute-1.amazonaws.com
-#  user: jlaqchmrcqhbxk
   username: jlaqchmrcqhbxk
   password: qZ_wQJS8lNI4hhW2m3RCru3OUg
   database: d25crtg5d54amo
   port: 5432
 
-
-
 development:
-  <<: *creds
+  <<: *base
+  <<: *orange
 #  database: kriogen_inertia_dev
 
 #test:
 #  database: kriogen_inert_t
 
 production:
-  <<: *creds
+  <<: *base
+  <<: *orange
 #  database: kriogen_inertia
