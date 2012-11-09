@@ -44,13 +44,10 @@ gem 'rspec-rails'
 group :development, :test do
   gem 'cucumber-rails'
   gem 'database_cleaner'
+  gem 'cucumber-rails'
 end
 
 # To use debugger
 #gem 'ruby-debug19', :require => 'ruby-debug'
 #gem 'debugger'
 
-#group :development, :test do
-#  gem 'capybara', '0.4.1.2'
-#  gem 'cucumber-rails', '0.4.0'
-#end
