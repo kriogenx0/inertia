@@ -37,10 +37,10 @@ development:
 
 test:
   <<: *base
-  <<: *orange
+  <<: *charcoal
 #  database: kriogen_inert_t
 
 production:
   <<: *base
-  <<: *charcoal
+  <<: *jade
 #  database: kriogen_inertia
