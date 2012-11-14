@@ -9,14 +9,14 @@ local: &local
   username: root
   passowrd: admin
 
-heroku_charcoal: &heroku_charcoal
+heroku_charcoal: &charcoal
   host: ec2-23-21-209-85.compute-1.amazonaws.com
   database: d94lb1fsbvcopf
   port: 5432
   username: yyhbjsgkolalma
   password: GEOJyNzN_ZcG7UPlY7YYKf_TiW
 
-heroku_jade: &heroku_jade
+heroku_jade: &jade
   host: ec2-107-21-99-45.compute-1.amazonaws.com
   database: dagiu9bqpmkdps
   port: 5432
@@ -32,13 +32,15 @@ heroku_orange: &orange
 
 development:
   <<: *base
-  <<: *orange
+  <<: *jade
 #  database: kriogen_inertia_dev
 
-#test:
+test:
+  <<: *base
+  <<: *orange
 #  database: kriogen_inert_t
 
 production:
   <<: *base
-  <<: *orange
+  <<: *charcoal
 #  database: kriogen_inertia
