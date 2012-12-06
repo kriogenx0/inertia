@@ -1,0 +1,25 @@
+@mixin background-gradient($startingColor, $endingColor)
+  background: $startingColor
+  background: -moz-linear-gradient(top,  $startingColor 0%, $endingColor 100%) /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, $startingColor), color-stop(100%,$endingColor)) /* Chrome,Safari4+ */
+  background: -webkit-linear-gradient(top, $startingColor 0%,$endingColor 100%) /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top, $startingColor 0%,$endingColor 100%) /* Opera 11.10+ */
+  background: -ms-linear-gradient(top, $startingColor 0%,$endingColor 100%) /* IE10+ */
+  background: linear-gradient(to bottom, $startingColor 0%,$endingColor 100%) /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='$startingColor', endColorstr='$endingColor',GradientType=0 ) /* IE6-9 */
+
+@mixin border-radius($rad...)
+  -moz-border-radius: $rad
+  -webkit-border-radius: $rad
+  border-radius: $rad
+
+@mixin box-shadow($shadows...)
+  -moz-box-shadow: $shadows
+  -webkit-box-shadow: $shadows
+  box-shadow: $shadows
+
+@mixin inset-text($topColor: rgba(0,0,0,.3), $bottomColor: rgba(255,255,255,0.3) )
+  text-shadow: 0 -1px 0 $topColor, 0 1px 0 $bottomColor
+
+@mixin outset-text($topColor: rgba(0,0,0,.3), $bottomColor: rgba(255,255,255,0.3) )
+  text-shadow: 0 1px 0 $topColor, 0 -1px 0 $bottomColor

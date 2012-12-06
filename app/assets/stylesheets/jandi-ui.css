@@ -1,17 +1,87 @@
 /*
 // JANDI BASE UI
 // USED FOR GROUND RULES FOR CSS
+//
+// JANDY TYPES:
+// t - text
+// y - layout
 */
+
+/*****************/
+/* TEXT */
+
+.t-tera
+{
+	font-size: 100px;
+	line-height: 120px;
+	letter-spacing: -2px;
+}
+.t-giga
+{
+	font-size: 60px;
+	line-height: 72px;
+	letter-spacing: -1px;
+}
+h1,
+.t-mega
+{
+	font-size: 32px;
+	line-height: 38px;
+}
+h2,
+.t-kilo
+{
+	font-size: 24px;
+	line-height: 30px;
+}
+h3
+{
+	font-size: 20px;	
+}
+h4
+{
+	font-size: 18px;
+}
+.t-mini
+{
+	font-size: 13px;
+	line-height: 18px;
+}
+.t-micro
+{
+	font-size: 10px;
+	line-height: 16px;
+}
+
+pre
+{
+	text-shadow: none;
+}
+strong
+{
+	font-weight: 600;
+}
+.t-center
+{
+	text-align: center;
+}
+.t-right
+{
+	text-align: right;
+}
+
+.t-blur,
+.textbox-blurred
+{
+	color: #777;
+	font-style: italic;	
+}
 
 /* BASICS */
 
 .ui-template
 {
 	display: none;	
-}
-.ui-center
-{
-	text-align: center;	
 }
 .ui-rule
 {
@@ -21,15 +91,18 @@
 }
 
 /* LAYOUT */
-.layout-padding
+.layout-padding,
+.y-kilo
 {
 	padding: 10px;
 }
-.layout-thick
+.layout-thick,
+.y-mega
 {
 	padding: 20px;
 }
-.layout-thicker
+.layout-thicker,
+.y-giga
 {
 	padding: 30px;
 }
@@ -39,7 +112,8 @@
 	padding: 20px 40px;
 }
 .ui-deep,
-.layout-deep
+.layout-deep,
+.y-tera
 {
 	padding: 40px;	
 }
@@ -120,34 +194,31 @@
 {
 	float: left;	
 }
-
-/*****************/
-/* TEXT */
-pre
+.lay-1of2
 {
-	text-shadow: none;
+  width: 49.5%;
 }
-strong
+.lay-1of3
 {
-	font-weight: 600;
+  width: 33.3%;
 }
-.text-center
+.lay-2of3
 {
-	text-align: center;
+  width: 66.6%;
 }
-.text-right
+.lay-1of2,
+.lay-1of3,
+.lay-2of3
 {
-	text-align: right;
-}
-
-.text-blurred,
-.textbox-blurred
-{
-	color: #777;
-	font-style: italic;	
+  float: left;
 }
 
 /* MISC */
+.loader,
+.ui-loader
+{
+	background: url(jandi-ui/loaders/loader-ffffff-666666.gif) no-repeat center;	
+}
 .icon
 {
 	display: inline-block;
@@ -172,11 +243,13 @@ strong
 {
 	color: #ce0000;
 	border: 1px solid #ce0000;
+	background: #fee url(jandi-ui/icons/icon-xmark-18x19.png) no-repeat 15px center;
 }
 .ui-message-success
 {
 	color: #0c0;
 	border: 1px solid #0c0;
+	background: #efe url(jandi-ui/icons/icon-check-21x19.png) no-repeat 15px center;
 }
 
 /************************************/
@@ -388,4 +461,14 @@ dl.splitWidth dd
 .ui-disableLoader
 {
 	position: relative;
+}
+.ui-disableLoader .disableLoader-layover
+{
+	background: #000 url(jandi-ui/loaders/loader-000000-ffffff.gif) no-repeat center;
+	position: absolute;
+	z-index: 100;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
 }
