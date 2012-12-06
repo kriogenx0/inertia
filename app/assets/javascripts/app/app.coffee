@@ -11,3 +11,4 @@ window.App =
 
 $(document).ready(
   -> window.app = new App.Router
+)
