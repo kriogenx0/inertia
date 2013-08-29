@@ -1,4 +1,4 @@
-module Deals
-  class Show < ::Stache::Mustache::View
+module Tasklist
+  class Index < ::Stache::Mustache::View
   end
 end

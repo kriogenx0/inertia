@@ -1,8 +1,3 @@
 # Be sure to restart your server when you modify this file.
 
-Inertia::Application.config.session_store :cookie_store, key: '_Inertia_session'
-
-# Use the database for sessions instead of the cookie-based default,
-# which shouldn't be used to store highly confidential information
-# (create the session table with "rails generate session_migration")
-# Inertia::Application.config.session_store :active_record_store
+Inertia::Application.config.session_store :cookie_store, key: '_inertia_session'
