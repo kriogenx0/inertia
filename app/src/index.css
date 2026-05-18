@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 240 10% 3.9%;
+      --foreground: 0 0% 98%;
+      --muted: 240 3.7% 15.9%;
+      --muted-foreground: 240 5% 64.9%;
+      --border: 240 3.7% 22%;
+      --input: 240 3.7% 22%;
+      --primary: 0 0% 98%;
+      --primary-foreground: 240 5.9% 10%;
+      --accent: 240 3.7% 15.9%;
+      --accent-foreground: 0 0% 98%;
+      --card: 240 10% 6%;
+      --card-foreground: 0 0% 98%;
+    }
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * {
+    @apply border-border;
+  }
+}
+
+/* Tiptap editor prose */
+.ProseMirror {
+  @apply outline-none;
+  min-height: 300px;
+}
+
+.ProseMirror > * + * {
+  @apply mt-3;
+}
+
+.ProseMirror h1 { @apply text-3xl font-bold mt-8 mb-2; }
+.ProseMirror h2 { @apply text-2xl font-semibold mt-6 mb-2; }
+.ProseMirror h3 { @apply text-xl font-semibold mt-4 mb-1; }
+.ProseMirror p { @apply leading-relaxed; }
+
+.ProseMirror ul:not([data-type="taskList"]) { @apply list-disc pl-5; }
+.ProseMirror ol { @apply list-decimal pl-5; }
+.ProseMirror li + li { @apply mt-1; }
+
+.ProseMirror code:not(pre code) {
+  @apply bg-muted text-foreground px-1.5 py-0.5 rounded font-mono;
+  font-size: 0.875em;
+}
+.ProseMirror pre {
+  @apply bg-muted rounded-lg p-4 overflow-x-auto;
+}
+.ProseMirror pre code {
+  @apply bg-transparent p-0 text-sm font-mono;
+}
+
+.ProseMirror hr { @apply border-border my-6; }
+.ProseMirror a { @apply text-blue-500 underline cursor-pointer; }
+
+.ProseMirror li[data-type="task-item"] {
+  @apply flex items-baseline gap-2 my-0.5;
+}
+.ProseMirror li[data-type="task-item"] > label {
+  @apply flex items-center pt-px cursor-default select-none;
+  flex: 0 0 auto;
+}
+.ProseMirror li[data-type="task-item"] > label input { @apply cursor-pointer; }
+.ProseMirror li[data-type="task-item"] > div { @apply flex-1; }
+.ProseMirror li[data-type="task-item"][data-checked="true"] > div p {
+  @apply line-through text-muted-foreground;
+}
+
+.ProseMirror table { @apply border-collapse w-full; }
+.ProseMirror th { @apply border px-3 py-2 bg-muted font-semibold text-left text-sm; }
+.ProseMirror td { @apply border px-3 py-2 text-sm; }
+
+.ProseMirror p.is-empty:first-child::before,
+.ProseMirror p.is-editor-empty:first-child::before,
+.ProseMirror h1.is-empty::before,
+.ProseMirror h2.is-empty::before,
+.ProseMirror h3.is-empty::before {
+  content: attr(data-placeholder);
+  @apply text-muted-foreground pointer-events-none float-left h-0;
+}

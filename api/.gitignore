@@ -1,0 +1,44 @@
+# Bundler
+/.bundle
+/vendor/bundle
+
+# Environment files
+/.env*
+!/.env*.erb
+!/.env.example
+
+# Logs and temp files
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+!/tmp/pids/
+!/tmp/pids/.keep
+!/tmp/storage/
+!/tmp/storage/.keep
+
+# Storage (uploaded files, SQLite databases)
+/storage/*
+!/storage/.keep
+*.sqlite3
+*.sqlite3-journal
+
+# Credentials and keys
+/config/master.key
+/config/credentials/*.key
+
+# Compiled assets
+/public/assets
+/public/packs
+/public/packs-test
+
+# Test coverage
+/coverage
+
+# macOS
+.DS_Store
+
+# Editor
+.idea
+*.swp
+*.swo
