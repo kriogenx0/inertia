@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, LogOut, FilePlus, FileText,
-  Table as TableIcon, Pin, Folder, Loader2,
+  Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
 } from 'lucide-react'
 import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
 import { useAuthStore } from '@/store/auth'
@@ -18,24 +18,25 @@ export default function Sidebar() {
   const pinDocument = usePinDocument()
   const pinFolder = usePinFolder()
   const logout = useAuthStore((s) => s.logout)
-  const user = useAuthStore((s) => s.user)
   const [addingFolder, setAddingFolder] = useState(false)
   const creatingRef = useRef(false)
   const folderInputRef = useRef<HTMLInputElement>(null)
+  const createNewDocumentRef = useRef(createNewDocument)
+  createNewDocumentRef.current = createNewDocument
 
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
 
-  // Cmd+N shortcut
+  // Cmd+N shortcut — ref keeps closure fresh so it always sees latest workspace state
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         e.preventDefault()
-        createNewDocument()
+        createNewDocumentRef.current()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleLogout() {
     api.delete('/api/v1/auth/logout').finally(() => {
@@ -60,6 +61,22 @@ export default function Sidebar() {
     }
   }
 
+  async function createNewSpreadsheet() {
+    if (creatingRef.current) return
+    creatingRef.current = true
+    try {
+      let folderId = workspace?.folders?.[0]?.id
+      if (!folderId) {
+        const folder = await createFolder.mutateAsync({ name: 'Documents' })
+        folderId = folder.id
+      }
+      const doc = await createDocument.mutateAsync({ folderId, title: 'Untitled', doc_type: 'spreadsheet' })
+      navigate(`/documents/${doc.id}`)
+    } finally {
+      creatingRef.current = false
+    }
+  }
+
   const allDocs = workspace?.folders?.flatMap((f) => f.documents ?? []) ?? []
   const pinnedDocs = allDocs.filter((d) => d.pinned)
   const pinnedFolders = (workspace?.folders ?? []).filter((f) => f.pinned)
@@ -69,18 +86,39 @@ export default function Sidebar() {
     <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
       {/* Header */}
       <div className="px-3 py-3 border-b">
-        <p className="font-semibold text-sm truncate">{workspace?.name ?? 'Inertia'}</p>
-        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+        <p className="font-semibold text-sm">Inertia</p>
+        <p className="text-xs text-muted-foreground truncate">{workspace?.name ?? 'My Workspace'}</p>
       </div>
 
       {/* Nav */}
-      <div className="px-2 py-2 border-b">
+      <div className="px-2 py-2 border-b flex flex-col gap-0.5">
         <button
-          onClick={() => navigate('/tasks')}
+          onClick={() => navigate('/tasks?view=backlog')}
           className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm hover:bg-accent ${location.pathname === '/tasks' ? 'bg-accent' : ''}`}
         >
           <CheckSquare className="w-4 h-4 text-muted-foreground" />
           Tasks
+        </button>
+        <div className="pl-6 flex flex-col gap-0.5">
+          <button
+            onClick={() => navigate('/tasks?view=backlog')}
+            className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=backlog') || (location.pathname === '/tasks' && !location.search) ? 'text-foreground' : 'text-muted-foreground'}`}
+          >
+            Backlog
+          </button>
+          <button
+            onClick={() => navigate('/tasks?view=kanban')}
+            className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=kanban') ? 'text-foreground' : 'text-muted-foreground'}`}
+          >
+            Kanban
+          </button>
+        </div>
+        <button
+          onClick={() => navigate('/events')}
+          className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm hover:bg-accent ${location.pathname === '/events' ? 'bg-accent' : ''}`}
+        >
+          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+          Events
         </button>
       </div>
 
@@ -149,6 +187,13 @@ export default function Sidebar() {
                 className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
               >
                 <FilePlus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                title="New spreadsheet"
+                onClick={() => createNewSpreadsheet()}
+                className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+              >
+                <TableIcon className="w-3.5 h-3.5" />
               </button>
               <button
                 title="New folder"

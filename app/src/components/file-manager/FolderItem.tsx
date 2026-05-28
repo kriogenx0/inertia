@@ -71,6 +71,13 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
     navigate(`/documents/${doc.id}`)
   }
 
+  async function handleNewSpreadsheet() {
+    setOpen(true)
+    setMenuOpen(false)
+    const doc = await createDocument.mutateAsync({ folderId: folder.id, title: 'Untitled', doc_type: 'spreadsheet' })
+    navigate(`/documents/${doc.id}`)
+  }
+
   function handleDragEnter(e: React.DragEvent) {
     e.preventDefault()
     dragCounter.current++
@@ -156,6 +163,12 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
                   Rename
                 </button>
                 <button
+                  onClick={handleNewSpreadsheet}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent"
+                >
+                  <TableIcon className="w-3.5 h-3.5" /> New Spreadsheet
+                </button>
+                <button
                   onClick={() => { deleteFolder.mutate(folder.id); setMenuOpen(false) }}
                   className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
                 >
@@ -200,7 +213,7 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
                   e.dataTransfer.effectAllowed = 'move'
                 }}
                 className={`group flex items-center gap-1.5 py-1 rounded-md cursor-pointer text-sm select-none hover:bg-accent ${active ? 'bg-accent' : ''}`}
-                style={{ paddingLeft: `${20 + indent}px`, paddingRight: '8px' }}
+                style={{ paddingLeft: `${24 + indent}px`, paddingRight: '8px' }}
                 onClick={() => navigate(`/documents/${doc.id}`)}
               >
                 {doc.doc_type === 'spreadsheet'

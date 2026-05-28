@@ -13,8 +13,6 @@ import Heading from '@tiptap/extension-heading'
 import BulletList from '@tiptap/extension-bullet-list'
 import OrderedList from '@tiptap/extension-ordered-list'
 import ListItem from '@tiptap/extension-list-item'
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
 import CodeBlock from '@tiptap/extension-code-block'
 import HorizontalRule from '@tiptap/extension-horizontal-rule'
 import TiptapImage from '@tiptap/extension-image'
@@ -38,6 +36,8 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Heading4,
+  Heading5,
   List,
   ListOrdered,
   ListChecks,
@@ -52,6 +52,13 @@ import {
 } from 'lucide-react'
 import Sidebar from '@/components/file-manager/Sidebar'
 import { useDocument, useUpdateDocument } from '@/api/documents'
+import { useCreateTask } from '@/api/tasks'
+import { useWorkspace } from '@/api/workspace'
+import SpreadsheetEditor from './SpreadsheetEditor'
+import Video from '@/extensions/Video'
+import { WorkspaceTaskList } from '@/extensions/WorkspaceTaskList'
+import { WorkspaceTaskItem } from '@/extensions/WorkspaceTaskItem'
+import api from '@/lib/api'
 
 // Enforce: document always starts with a heading followed by body content
 const CustomDocument = TiptapDocument.extend({ content: 'heading block*' })
@@ -118,9 +125,17 @@ export default function DocumentPage() {
   const docId = Number(idStr)
   const { data: doc, isLoading } = useDocument(docId)
   const updateDocument = useUpdateDocument()
+  const createTask = useCreateTask()
+  const { data: workspace } = useWorkspace()
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const pendingRef = useRef<{ title?: string; content?: Record<string, unknown> }>({})
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  // Always-current refs so stale closures in useEditor callbacks can read live values
+  const workspaceRef = useRef(workspace)
+  workspaceRef.current = workspace
+  const createTaskRef = useRef(createTask)
+  createTaskRef.current = createTask
 
   const editor = useEditor({
     extensions: [
@@ -133,16 +148,17 @@ export default function DocumentPage() {
       Underline,
       Strike,
       Code,
-      Heading.configure({ levels: [1, 2, 3] as (1 | 2 | 3 | 4 | 5 | 6)[] }),
+      Heading.configure({ levels: [1, 2, 3, 4, 5] as (1 | 2 | 3 | 4 | 5 | 6)[] }),
       BulletList,
       OrderedList,
       ListItem,
-      TaskList,
-      TaskItem.configure({ nested: false }),
+      WorkspaceTaskList,
+      WorkspaceTaskItem,
       CodeBlock,
       HorizontalRule,
       TiptapImage,
       Link.configure({ openOnClick: false }),
+      Video,
       Table.configure({ resizable: false }),
       TableRow,
       TableCell,
@@ -159,12 +175,13 @@ export default function DocumentPage() {
     onUpdate: ({ editor }) => {
       const content = editor.getJSON() as Record<string, unknown>
       const title = extractTitle(content)
-      scheduleSave({ content, title })
+      scheduleSaveRef.current({ content, title })
     },
   })
 
   useEffect(() => {
     if (!editor || !doc) return
+    if (doc.doc_type === 'spreadsheet') return
     if (doc.content) {
       editor.commands.setContent(doc.content)
     } else {
@@ -182,10 +199,46 @@ export default function DocumentPage() {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   }, [])
 
+  // After each save, create workspace tasks for any unlinked task items in the document.
+  // Reads workspace/createTask from refs so it's never stale regardless of when it's called.
+  async function syncTaskNodes(currentEditor: ReturnType<typeof useEditor>) {
+    if (!currentEditor) return
+    const ws = workspaceRef.current
+    const allDocs = ws?.folders?.flatMap((f) => f.documents ?? []) ?? []
+    const targetDocId = allDocs.find((d) => d.id === docId)?.id ?? allDocs[0]?.id
+    if (!targetDocId) return
+
+    const unlinked: { pos: number; text: string }[] = []
+    currentEditor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'workspaceTaskItem' && !node.attrs.taskId && node.textContent.trim()) {
+        unlinked.push({ pos, text: node.textContent.trim() })
+      }
+    })
+    if (unlinked.length === 0) return
+
+    for (const { pos, text } of unlinked) {
+      const task = await createTaskRef.current.mutateAsync({ documentId: targetDocId, title: text, status: 'backlog' })
+      // Use fresh state for each dispatch so positions remain accurate
+      const node = currentEditor.state.doc.nodeAt(pos)
+      if (node?.type.name === 'workspaceTaskItem' && !node.attrs.taskId) {
+        currentEditor.view.dispatch(
+          currentEditor.state.tr.setNodeMarkup(pos, undefined, { taskId: task.id })
+        )
+      }
+    }
+  }
+
+  // scheduleSaveRef lets the stale onUpdate closure always call the current scheduleSave
+  const scheduleSaveRef = useRef<(changes: { title?: string; content?: Record<string, unknown> }) => void>(
+    () => {},
+  )
+
   function scheduleSave(changes: { title?: string; content?: Record<string, unknown> }) {
     pendingRef.current = { ...pendingRef.current, ...changes }
     setSaveStatus('unsaved')
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    // Capture editor reference now so the timeout always has the live editor
+    const currentEditor = editor
     saveTimerRef.current = setTimeout(async () => {
       const toSave = { ...pendingRef.current }
       pendingRef.current = {}
@@ -193,10 +246,36 @@ export default function DocumentPage() {
       try {
         await updateDocument.mutateAsync({ id: docId, ...toSave })
         setSaveStatus('saved')
+        syncTaskNodes(currentEditor)
       } catch {
         setSaveStatus('unsaved')
       }
     }, 1500)
+  }
+  scheduleSaveRef.current = scheduleSave
+
+  async function uploadFile(file: File): Promise<string> {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await api.post<{ url: string }>('/api/v1/uploads', form)
+    return res.data.url
+  }
+
+  async function handleEditorDrop(e: React.DragEvent<HTMLDivElement>) {
+    const files = Array.from(e.dataTransfer.files)
+    if (!files.length || !editor) return
+    const media = files.filter((f) => f.type.startsWith('image/') || f.type.startsWith('video/'))
+    if (!media.length) return
+    e.preventDefault()
+    e.stopPropagation()
+    for (const file of media) {
+      const url = await uploadFile(file)
+      if (file.type.startsWith('image/')) {
+        editor.chain().focus().setImage({ src: url }).run()
+      } else {
+        editor.chain().focus().insertContent({ type: 'video', attrs: { src: url } }).run()
+      }
+    }
   }
 
   if (isLoading || !editor) {
@@ -208,6 +287,10 @@ export default function DocumentPage() {
         </div>
       </div>
     )
+  }
+
+  if (doc?.doc_type === 'spreadsheet') {
+    return <SpreadsheetEditor docId={docId} />
   }
 
   if (!doc) {
@@ -244,19 +327,31 @@ export default function DocumentPage() {
             icon={<Heading1 className="w-4 h-4" />}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             active={editor.isActive('heading', { level: 1 })}
-            title="Heading 1"
+            title="Heading 1 (⌘⌥1)"
           />
           <ToolbarBtn
             icon={<Heading2 className="w-4 h-4" />}
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             active={editor.isActive('heading', { level: 2 })}
-            title="Heading 2"
+            title="Heading 2 (⌘⌥2)"
           />
           <ToolbarBtn
             icon={<Heading3 className="w-4 h-4" />}
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             active={editor.isActive('heading', { level: 3 })}
-            title="Heading 3"
+            title="Heading 3 (⌘⌥3)"
+          />
+          <ToolbarBtn
+            icon={<Heading4 className="w-4 h-4" />}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+            active={editor.isActive('heading', { level: 4 })}
+            title="Heading 4 (⌘⌥4)"
+          />
+          <ToolbarBtn
+            icon={<Heading5 className="w-4 h-4" />}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+            active={editor.isActive('heading', { level: 5 })}
+            title="Heading 5 (⌘⌥5)"
           />
           <Divider />
           <ToolbarBtn
@@ -304,8 +399,17 @@ export default function DocumentPage() {
           />
           <ToolbarBtn
             icon={<ListChecks className="w-4 h-4" />}
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-            active={editor.isActive('taskList')}
+            onClick={() => {
+              const { state, dispatch } = editor.view
+              const { workspaceTaskList, workspaceTaskItem, paragraph } = state.schema.nodes
+              const node = workspaceTaskList.create(null, [
+                workspaceTaskItem.create(null, paragraph.create()),
+              ])
+              const tr = state.tr.replaceSelectionWith(node)
+              dispatch(tr)
+              editor.commands.focus()
+            }}
+            active={editor.isActive('workspaceTaskList')}
             title="Task list"
           />
           <Divider />
@@ -349,8 +453,17 @@ export default function DocumentPage() {
           </div>
         </div>
 
-        {/* Editor area */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Editor area — clicking anywhere in the whitespace focuses the editor */}
+        <div
+          className="flex-1 overflow-y-auto cursor-text"
+          onDrop={handleEditorDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={(e) => {
+            if (!(e.target as HTMLElement).closest('.ProseMirror')) {
+              editor.commands.focus('end')
+            }
+          }}
+        >
           <div className="max-w-3xl mx-auto py-12 px-8">
             <EditorContent editor={editor} />
           </div>

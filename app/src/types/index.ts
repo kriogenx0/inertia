@@ -30,10 +30,21 @@ export interface Task {
   id: number
   title: string
   description: string | null
-  status: 'todo' | 'in_progress' | 'in_review' | 'done'
+  status: 'todo' | 'in_progress' | 'in_review' | 'done' | 'backlog'
   due_date: string | null
   position: number
   document_id: number
   assignee_id: number | null
   document?: Document
+}
+
+export interface WorkspaceEvent {
+  id: number
+  title: string
+  description: string | null
+  date: string
+  event_type: 'deadline' | 'milestone'
+  tasks: Task[]
+  created_at: string
+  updated_at: string
 }

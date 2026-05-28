@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_18_000001) do
+ActiveRecord::Schema[7.2].define(version: 2026_05_19_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -27,6 +27,28 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_18_000001) do
     t.index ["created_by_id"], name: "index_documents_on_created_by_id"
     t.index ["doc_type"], name: "index_documents_on_doc_type"
     t.index ["folder_id"], name: "index_documents_on_folder_id"
+  end
+
+  create_table "event_tasks", force: :cascade do |t|
+    t.bigint "event_id", null: false
+    t.bigint "task_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_id", "task_id"], name: "index_event_tasks_on_event_id_and_task_id", unique: true
+    t.index ["event_id"], name: "index_event_tasks_on_event_id"
+    t.index ["task_id"], name: "index_event_tasks_on_task_id"
+  end
+
+  create_table "events", force: :cascade do |t|
+    t.string "title", null: false
+    t.text "description"
+    t.date "date", null: false
+    t.integer "event_type", default: 0, null: false
+    t.bigint "workspace_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["workspace_id", "date"], name: "index_events_on_workspace_id_and_date"
+    t.index ["workspace_id"], name: "index_events_on_workspace_id"
   end
 
   create_table "folders", force: :cascade do |t|
@@ -63,7 +85,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_18_000001) do
   create_table "tasks", force: :cascade do |t|
     t.string "title", null: false
     t.text "description"
-    t.integer "status", default: 0, null: false
+    t.integer "status", default: 4, null: false
     t.date "due_date"
     t.integer "position", default: 0
     t.bigint "document_id", null: false
@@ -98,6 +120,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_18_000001) do
 
   add_foreign_key "documents", "folders"
   add_foreign_key "documents", "users", column: "created_by_id"
+  add_foreign_key "event_tasks", "events"
+  add_foreign_key "event_tasks", "tasks"
+  add_foreign_key "events", "workspaces"
   add_foreign_key "folders", "folders", column: "parent_id"
   add_foreign_key "folders", "workspaces"
   add_foreign_key "shares", "users", column: "created_by_id"

@@ -78,16 +78,20 @@
 .ProseMirror hr { @apply border-border my-6; }
 .ProseMirror a { @apply text-blue-500 underline cursor-pointer; }
 
-.ProseMirror li[data-type="task-item"] {
-  @apply flex items-baseline gap-2 my-0.5;
+.ProseMirror ul[data-type="workspaceTaskList"] { @apply list-none p-0 m-0; }
+.ProseMirror ul[data-type="workspaceTaskList"] li { @apply my-0; }
+
+.ProseMirror ul[data-type="taskList"] { @apply list-none p-0 m-0; }
+.ProseMirror li[data-type="taskItem"] {
+  @apply flex items-start gap-2 my-0.5;
 }
-.ProseMirror li[data-type="task-item"] > label {
-  @apply flex items-center pt-px cursor-default select-none;
+.ProseMirror li[data-type="taskItem"] > label {
+  @apply flex items-center mt-0.5 cursor-default select-none;
   flex: 0 0 auto;
 }
-.ProseMirror li[data-type="task-item"] > label input { @apply cursor-pointer; }
-.ProseMirror li[data-type="task-item"] > div { @apply flex-1; }
-.ProseMirror li[data-type="task-item"][data-checked="true"] > div p {
+.ProseMirror li[data-type="taskItem"] > label input { @apply cursor-pointer w-4 h-4; }
+.ProseMirror li[data-type="taskItem"] > div { @apply flex-1; }
+.ProseMirror li[data-type="taskItem"][data-checked="true"] > div p {
   @apply line-through text-muted-foreground;
 }
 

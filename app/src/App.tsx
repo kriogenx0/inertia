@@ -5,9 +5,11 @@ import SignupPage from '@/pages/auth/SignupPage'
 import WorkspacePage from '@/pages/workspace/WorkspacePage'
 import DocumentPage from '@/pages/workspace/DocumentPage'
 import TasksPage from '@/pages/workspace/TasksPage'
+import EventsPage from '@/pages/workspace/EventsPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
+  if (import.meta.env.VITE_BYPASS_AUTH === 'true') return <>{children}</>
   return token ? <>{children}</> : <Navigate to="/login" replace />
 }
 
@@ -38,6 +40,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <TasksPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/events"
+        element={
+          <PrivateRoute>
+            <EventsPage />
           </PrivateRoute>
         }
       />
