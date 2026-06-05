@@ -1,4 +1,4 @@
-.PHONY: help setup build up up-d down restart \
+.PHONY: help setup build build-mac up up-d down restart \
         logs logs-api logs-frontend ps open \
         db-migrate db-rollback db-reset db-seed \
         console routes shell-api shell-frontend \
@@ -35,6 +35,9 @@ build-api: ## Build only the API image
 
 build-frontend: ## Build only the frontend image
 	$(COMPOSE) build frontend
+
+build-mac: ## Build the macOS Electron app (outputs to app/dist-electron)
+	cd app && npm install && npm run electron:build-mac
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 

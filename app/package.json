@@ -3,10 +3,25 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "electron:build-mac": "npm run build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.inertia.app",
+    "productName": "Inertia",
+    "files": ["dist/**/*", "electron/**/*"],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"]
+    }
   },
   "dependencies": {
     "@fortune-sheet/react": "^1.0.4",
@@ -63,6 +78,8 @@
     "@types/react-dom": "^19.0.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "electron": "^36.0.0",
+    "electron-builder": "^25.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.7.2",
