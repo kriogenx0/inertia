@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronRight, Folder, FileText, TableIcon, Pin } from 'lucide-react'
 import {
   useCreateFolder, useCreateDocument, useDeleteFolder, useDeleteDocument,
-  usePinFolder, usePinDocument, useMoveDocument, useUpdateFolder,
+  usePinFolder, usePinDocument, useUpdateFolder,
 } from '@/api/workspace'
 import { useUpdateDocument } from '@/api/documents'
 import type { Folder as FolderType, Document } from '@/types'
@@ -95,32 +95,23 @@ function InlineInput({ defaultValue, onConfirm, onCancel }: InlineInputProps) {
 
 // ── DocRow ────────────────────────────────────────────────────────────────────
 
-function DocRow({ doc, active, indent, onNavigate, onMove, onContextMenu, renamingDocId, onConfirmRename, onCancelRename }: {
+function DocRow({ doc, active, indent, onContextMenu, renamingDocId, onConfirmRename, onCancelRename }: {
   doc: Document
   active: boolean
   indent: number
-  onNavigate: () => void
-  onMove: (folderId: number) => void
   onContextMenu: (e: React.MouseEvent) => void
   renamingDocId: number | null
   onConfirmRename: (title: string) => void
   onCancelRename: () => void
 }) {
-  const dragging = useRef(false)
+  const navigate = useNavigate()
 
   return (
-    <button
-      type="button"
-      className={`group flex items-center gap-1.5 w-full py-1 rounded-md text-sm select-none hover:bg-accent ${active ? 'bg-accent' : ''}`}
+    <div
+      className={`group flex items-center gap-1.5 w-full py-1 rounded-md text-sm hover:bg-accent cursor-pointer ${active ? 'bg-accent' : ''}`}
       style={{ paddingLeft: `${36 + indent}px`, paddingRight: '8px' }}
-      onClick={() => { if (!dragging.current) onNavigate() }}
+      onPointerUp={() => navigate(`/documents/${doc.id}`)}
       onContextMenu={onContextMenu}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault()
-        const folderId = Number(e.dataTransfer.getData('folderId'))
-        if (folderId) onMove(folderId)
-      }}
     >
       {doc.doc_type === 'spreadsheet'
         ? <TableIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -133,10 +124,10 @@ function DocRow({ doc, active, indent, onNavigate, onMove, onContextMenu, renami
           onCancel={onCancelRename}
         />
       ) : (
-        <span className="flex-1 truncate text-left">{doc.title}</span>
+        <span className="flex-1 truncate text-left select-none">{doc.title}</span>
       )}
       {doc.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
-    </button>
+    </div>
   )
 }
 
@@ -167,7 +158,6 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
   const deleteDocument = useDeleteDocument()
   const pinFolder = usePinFolder()
   const pinDocument = usePinDocument()
-  const moveDocument = useMoveDocument()
   const updateFolder = useUpdateFolder()
   const updateDocument = useUpdateDocument()
 
@@ -200,11 +190,6 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
     e.preventDefault()
     dragCounter.current = 0
     setIsDragOver(false)
-    const docId = Number(e.dataTransfer.getData('docId'))
-    const currentFolderId = Number(e.dataTransfer.getData('folderId'))
-    if (docId && currentFolderId !== folder.id) {
-      moveDocument.mutate({ id: docId, folderId: folder.id })
-    }
   }
 
   const folderMenuItems: MenuItem[] = [
@@ -305,8 +290,6 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
                 doc={doc}
                 active={active}
                 indent={indent}
-                onNavigate={() => navigate(`/documents/${doc.id}`)}
-                onMove={(folderId) => moveDocument.mutate({ id: doc.id, folderId })}
                 onContextMenu={(e) => openDocCtx(e, doc)}
                 renamingDocId={renamingDocId}
                 onConfirmRename={(title) => { updateDocument.mutate({ id: doc.id, title }); setRenamingDocId(null) }}
