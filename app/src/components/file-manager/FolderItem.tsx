@@ -1,41 +1,148 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  ChevronRight, FilePlus, FolderPlus, Folder, FileText, MoreHorizontal,
-  Trash2, TableIcon, Pin,
-} from 'lucide-react'
+import { ChevronRight, Folder, FileText, TableIcon, Pin } from 'lucide-react'
 import {
   useCreateFolder, useCreateDocument, useDeleteFolder, useDeleteDocument,
   usePinFolder, usePinDocument, useMoveDocument, useUpdateFolder,
 } from '@/api/workspace'
-import type { Folder as FolderType } from '@/types'
+import { useUpdateDocument } from '@/api/documents'
+import type { Folder as FolderType, Document } from '@/types'
+
+// ── Context menu ─────────────────────────────────────────────────────────────
+
+interface MenuItem {
+  label: string
+  action: () => void
+  danger?: boolean
+}
+
+interface ContextMenuProps {
+  x: number
+  y: number
+  items: MenuItem[]
+  onClose: () => void
+}
+
+function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [onClose])
+
+  // Keep menu on screen
+  const left = Math.min(x, window.innerWidth - 160)
+  const top = Math.min(y, window.innerHeight - items.length * 36 - 8)
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-50 bg-card border rounded-lg shadow-lg py-1 w-44"
+      style={{ left, top }}
+    >
+      {items.map((item) => (
+        <button
+          key={item.label}
+          onClick={() => { item.action(); onClose() }}
+          className={`flex w-full items-center px-3 py-1.5 text-sm ${
+            item.danger
+              ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950'
+              : 'hover:bg-accent'
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Inline rename input ───────────────────────────────────────────────────────
 
 interface InlineInputProps {
-  placeholder: string
-  onConfirm: (value: string) => void | Promise<void>
+  defaultValue: string
+  onConfirm: (value: string) => void
   onCancel: () => void
 }
 
-function InlineInput({ placeholder, onConfirm, onCancel }: InlineInputProps) {
+function InlineInput({ defaultValue, onConfirm, onCancel }: InlineInputProps) {
   const ref = useRef<HTMLInputElement>(null)
-  const submittedRef = useRef(false)
-  useEffect(() => ref.current?.focus(), [])
+  const submitted = useRef(false)
+  useEffect(() => {
+    ref.current?.focus()
+    ref.current?.select()
+  }, [])
   return (
     <input
       ref={ref}
-      placeholder={placeholder}
-      className="w-full text-sm px-2 py-0.5 rounded border border-input bg-card outline-none focus:ring-1 focus:ring-primary"
+      defaultValue={defaultValue}
+      className="flex-1 min-w-0 text-sm px-1 py-0 rounded border border-input bg-card outline-none focus:ring-1 focus:ring-primary"
       onKeyDown={(e) => {
         if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-          submittedRef.current = true
+          submitted.current = true
           onConfirm(e.currentTarget.value.trim())
         }
         if (e.key === 'Escape') onCancel()
       }}
-      onBlur={() => { if (!submittedRef.current) onCancel() }}
+      onBlur={() => { if (!submitted.current) onCancel() }}
     />
   )
 }
+
+// ── DocRow ────────────────────────────────────────────────────────────────────
+
+function DocRow({ doc, active, indent, onNavigate, onMove, onContextMenu, renamingDocId, onConfirmRename, onCancelRename }: {
+  doc: Document
+  active: boolean
+  indent: number
+  onNavigate: () => void
+  onMove: (folderId: number) => void
+  onContextMenu: (e: React.MouseEvent) => void
+  renamingDocId: number | null
+  onConfirmRename: (title: string) => void
+  onCancelRename: () => void
+}) {
+  const dragging = useRef(false)
+
+  return (
+    <button
+      type="button"
+      className={`group flex items-center gap-1.5 w-full py-1 rounded-md text-sm select-none hover:bg-accent ${active ? 'bg-accent' : ''}`}
+      style={{ paddingLeft: `${36 + indent}px`, paddingRight: '8px' }}
+      onClick={() => { if (!dragging.current) onNavigate() }}
+      onContextMenu={onContextMenu}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        const folderId = Number(e.dataTransfer.getData('folderId'))
+        if (folderId) onMove(folderId)
+      }}
+    >
+      {doc.doc_type === 'spreadsheet'
+        ? <TableIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        : <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+      }
+      {renamingDocId === doc.id ? (
+        <InlineInput
+          defaultValue={doc.title}
+          onConfirm={onConfirmRename}
+          onCancel={onCancelRename}
+        />
+      ) : (
+        <span className="flex-1 truncate text-left">{doc.title}</span>
+      )}
+      {doc.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
+    </button>
+  )
+}
+
+// ── FolderItem ────────────────────────────────────────────────────────────────
+
+interface ContextState { x: number; y: number }
 
 interface FolderItemProps {
   folder: FolderType
@@ -47,10 +154,12 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
   const location = useLocation()
   const [open, setOpen] = useState(true)
   const [addingFolder, setAddingFolder] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [renaming, setRenaming] = useState(false)
+  const [renamingFolder, setRenamingFolder] = useState(false)
+  const [renamingDocId, setRenamingDocId] = useState<number | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const dragCounter = useRef(0)
+  const [folderCtx, setFolderCtx] = useState<ContextState | null>(null)
+  const [docCtx, setDocCtx] = useState<{ pos: ContextState; doc: Document } | null>(null)
 
   const createDocument = useCreateDocument()
   const createFolder = useCreateFolder()
@@ -59,23 +168,21 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
   const pinFolder = usePinFolder()
   const pinDocument = usePinDocument()
   const moveDocument = useMoveDocument()
-
   const updateFolder = useUpdateFolder()
+  const updateDocument = useUpdateDocument()
 
   const indent = depth * 12
 
-  async function handleNewDoc(e: React.MouseEvent) {
+  function openFolderCtx(e: React.MouseEvent) {
+    e.preventDefault()
     e.stopPropagation()
-    setOpen(true)
-    const doc = await createDocument.mutateAsync({ folderId: folder.id, title: 'Untitled', doc_type: 'document' })
-    navigate(`/documents/${doc.id}`)
+    setFolderCtx({ x: e.clientX, y: e.clientY })
   }
 
-  async function handleNewSpreadsheet() {
-    setOpen(true)
-    setMenuOpen(false)
-    const doc = await createDocument.mutateAsync({ folderId: folder.id, title: 'Untitled', doc_type: 'spreadsheet' })
-    navigate(`/documents/${doc.id}`)
+  function openDocCtx(e: React.MouseEvent, doc: Document) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDocCtx({ pos: { x: e.clientX, y: e.clientY }, doc })
   }
 
   function handleDragEnter(e: React.DragEvent) {
@@ -100,6 +207,42 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
     }
   }
 
+  const folderMenuItems: MenuItem[] = [
+    {
+      label: 'New Document',
+      action: async () => {
+        setOpen(true)
+        const doc = await createDocument.mutateAsync({ folderId: folder.id, title: 'Untitled', doc_type: 'document' })
+        navigate(`/documents/${doc.id}`)
+      },
+    },
+    {
+      label: 'New Spreadsheet',
+      action: async () => {
+        setOpen(true)
+        const doc = await createDocument.mutateAsync({ folderId: folder.id, title: 'Untitled', doc_type: 'spreadsheet' })
+        navigate(`/documents/${doc.id}`)
+      },
+    },
+    {
+      label: 'New Subfolder',
+      action: () => { setOpen(true); setAddingFolder(true) },
+    },
+    {
+      label: folder.pinned ? 'Unpin' : 'Pin',
+      action: () => pinFolder.mutate({ id: folder.id, pinned: !folder.pinned }),
+    },
+    {
+      label: 'Rename',
+      action: () => setRenamingFolder(true),
+    },
+    {
+      label: 'Delete',
+      action: () => deleteFolder.mutate(folder.id),
+      danger: true,
+    },
+  ]
+
   return (
     <div
       onDragEnter={handleDragEnter}
@@ -111,86 +254,39 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
       <div
         className="group flex items-center gap-1 py-1 rounded-md hover:bg-accent cursor-pointer text-sm select-none"
         style={{ paddingLeft: `${8 + indent}px`, paddingRight: '8px' }}
+        onContextMenu={openFolderCtx}
       >
-        <button onClick={() => setOpen(!open)} className="text-muted-foreground">
+        <button onClick={() => setOpen(!open)} className="text-muted-foreground shrink-0">
           <ChevronRight className={`w-3 h-3 transition-transform ${open ? 'rotate-90' : ''}`} />
         </button>
         <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        {renaming ? (
+        {renamingFolder ? (
           <InlineInput
-            placeholder={folder.name}
-            onConfirm={(name) => { updateFolder.mutate({ id: folder.id, name }); setRenaming(false) }}
-            onCancel={() => setRenaming(false)}
+            defaultValue={folder.name}
+            onConfirm={(name) => { updateFolder.mutate({ id: folder.id, name }); setRenamingFolder(false) }}
+            onCancel={() => setRenamingFolder(false)}
           />
         ) : (
           <span className="flex-1 truncate text-foreground">{folder.name}</span>
         )}
-        <span className="hidden group-hover:flex items-center gap-0.5">
-          <button
-            title="New document"
-            onClick={handleNewDoc}
-            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-          >
-            <FilePlus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            title="New subfolder"
-            onClick={(e) => { e.stopPropagation(); setOpen(true); setAddingFolder(true) }}
-            className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-          >
-            <FolderPlus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            title={folder.pinned ? 'Unpin' : 'Pin'}
-            onClick={(e) => { e.stopPropagation(); pinFolder.mutate({ id: folder.id, pinned: !folder.pinned }) }}
-            className={`p-0.5 rounded hover:bg-muted hover:text-foreground ${folder.pinned ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-            <Pin className="w-3.5 h-3.5" />
-          </button>
-          <div className="relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }}
-              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 top-5 z-10 bg-card border rounded-lg shadow-lg py-1 w-40">
-                <button
-                  onClick={() => { setRenaming(true); setMenuOpen(false) }}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent"
-                >
-                  Rename
-                </button>
-                <button
-                  onClick={handleNewSpreadsheet}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-sm hover:bg-accent"
-                >
-                  <TableIcon className="w-3.5 h-3.5" /> New Spreadsheet
-                </button>
-                <button
-                  onClick={() => { deleteFolder.mutate(folder.id); setMenuOpen(false) }}
-                  className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
-            )}
-          </div>
-        </span>
-
-        {/* Always-visible pin indicator */}
-        {folder.pinned && (
-          <Pin className="w-3 h-3 text-muted-foreground group-hover:hidden shrink-0" />
-        )}
+        {folder.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
       </div>
+
+      {folderCtx && (
+        <ContextMenu
+          x={folderCtx.x}
+          y={folderCtx.y}
+          items={folderMenuItems}
+          onClose={() => setFolderCtx(null)}
+        />
+      )}
 
       {open && (
         <div>
           {addingFolder && (
             <div style={{ paddingLeft: `${20 + indent}px` }} className="pr-2 py-0.5">
               <InlineInput
-                placeholder="Folder name"
+                defaultValue=""
                 onConfirm={(name) => { createFolder.mutate({ name, parent_id: folder.id }); setAddingFolder(false) }}
                 onCancel={() => setAddingFolder(false)}
               />
@@ -204,45 +300,34 @@ export function FolderItem({ folder, depth = 0 }: FolderItemProps) {
           {folder.documents?.map((doc) => {
             const active = location.pathname === `/documents/${doc.id}`
             return (
-              <div
+              <DocRow
                 key={doc.id}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('docId', String(doc.id))
-                  e.dataTransfer.setData('folderId', String(folder.id))
-                  e.dataTransfer.effectAllowed = 'move'
-                }}
-                className={`group flex items-center gap-1.5 py-1 rounded-md cursor-pointer text-sm select-none hover:bg-accent ${active ? 'bg-accent' : ''}`}
-                style={{ paddingLeft: `${24 + indent}px`, paddingRight: '8px' }}
-                onClick={() => navigate(`/documents/${doc.id}`)}
-              >
-                {doc.doc_type === 'spreadsheet'
-                  ? <TableIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  : <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                }
-                <span className="flex-1 truncate">{doc.title}</span>
-                <span className="hidden group-hover:flex items-center gap-0.5">
-                  <button
-                    title={doc.pinned ? 'Unpin' : 'Pin'}
-                    onClick={(e) => { e.stopPropagation(); pinDocument.mutate({ id: doc.id, pinned: !doc.pinned }) }}
-                    className={`p-0.5 rounded hover:bg-muted hover:text-foreground ${doc.pinned ? 'text-foreground' : 'text-muted-foreground'}`}
-                  >
-                    <Pin className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteDocument.mutate(doc.id) }}
-                    className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-red-500"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </span>
-                {doc.pinned && (
-                  <Pin className="w-2.5 h-2.5 text-muted-foreground group-hover:hidden shrink-0" />
-                )}
-              </div>
+                doc={doc}
+                active={active}
+                indent={indent}
+                onNavigate={() => navigate(`/documents/${doc.id}`)}
+                onMove={(folderId) => moveDocument.mutate({ id: doc.id, folderId })}
+                onContextMenu={(e) => openDocCtx(e, doc)}
+                renamingDocId={renamingDocId}
+                onConfirmRename={(title) => { updateDocument.mutate({ id: doc.id, title }); setRenamingDocId(null) }}
+                onCancelRename={() => setRenamingDocId(null)}
+              />
             )
           })}
         </div>
+      )}
+
+      {docCtx && (
+        <ContextMenu
+          x={docCtx.pos.x}
+          y={docCtx.pos.y}
+          items={[
+            { label: 'Rename', action: () => setRenamingDocId(docCtx.doc.id) },
+            { label: docCtx.doc.pinned ? 'Unpin' : 'Pin', action: () => pinDocument.mutate({ id: docCtx.doc.id, pinned: !docCtx.doc.pinned }) },
+            { label: 'Delete', action: () => deleteDocument.mutate(docCtx.doc.id), danger: true },
+          ]}
+          onClose={() => setDocCtx(null)}
+        />
       )}
     </div>
   )

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_19_000002) do
+ActiveRecord::Schema[7.2].define(version: 2026_06_11_051106) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -88,13 +88,15 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_19_000002) do
     t.integer "status", default: 4, null: false
     t.date "due_date"
     t.integer "position", default: 0
-    t.bigint "document_id", null: false
+    t.bigint "document_id"
     t.bigint "assignee_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "workspace_id", null: false
     t.index ["assignee_id"], name: "index_tasks_on_assignee_id"
     t.index ["document_id"], name: "index_tasks_on_document_id"
     t.index ["status"], name: "index_tasks_on_status"
+    t.index ["workspace_id"], name: "index_tasks_on_workspace_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -128,5 +130,6 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_19_000002) do
   add_foreign_key "shares", "users", column: "created_by_id"
   add_foreign_key "tasks", "documents"
   add_foreign_key "tasks", "users", column: "assignee_id"
+  add_foreign_key "tasks", "workspaces"
   add_foreign_key "workspaces", "users"
 end

@@ -1,21 +1,20 @@
 module Api
   module V1
     class TasksController < ApplicationController
-      before_action :set_document, only: [:index, :create]
       before_action :set_task, only: [:update, :destroy]
 
       def index
-        if params[:document_id]
-          tasks = @document.tasks
+        tasks = if params[:document_id]
+          current_workspace.tasks.where(document_id: params[:document_id])
         else
-          tasks = Task.joins(document: :folder)
-            .where(folders: { workspace_id: current_user.workspace.id })
+          current_workspace.tasks
         end
         render json: TaskBlueprint.render(tasks, view: :with_document)
       end
 
       def create
-        task = @document.tasks.build(task_params)
+        task = current_workspace.tasks.build(task_params)
+        task.document_id = params[:document_id] if params[:document_id].present?
         if task.save
           render json: TaskBlueprint.render(task), status: :created
         else
@@ -38,16 +37,12 @@ module Api
 
       private
 
-      def set_document
-        @document = Document.joins(:folder)
-          .where(folders: { workspace_id: current_user.workspace.id })
-          .find(params[:document_id])
+      def current_workspace
+        current_user.workspace
       end
 
       def set_task
-        @task = Task.joins(document: :folder)
-          .where(folders: { workspace_id: current_user.workspace.id })
-          .find(params[:id])
+        @task = current_workspace.tasks.find(params[:id])
       end
 
       def task_params

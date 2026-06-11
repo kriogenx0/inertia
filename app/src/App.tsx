@@ -4,6 +4,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 import SignupPage from '@/pages/auth/SignupPage'
 import WorkspacePage from '@/pages/workspace/WorkspacePage'
 import DocumentPage from '@/pages/workspace/DocumentPage'
+import DocumentsIndexPage from '@/pages/workspace/DocumentsIndexPage'
 import TasksPage from '@/pages/workspace/TasksPage'
 import EventsPage from '@/pages/workspace/EventsPage'
 
@@ -28,7 +29,14 @@ export default function App() {
         }
       />
       <Route
-        path="/documents/:id"
+        path="/documents"
+        element={
+          <PrivateRoute>
+            <DocumentsIndexPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
         element={
           <PrivateRoute>
             <DocumentPage />

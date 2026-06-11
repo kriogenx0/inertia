@@ -6,32 +6,32 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --primary: 240 5.9% 10%;
+    --muted: 174 20% 94%;
+    --muted-foreground: 174 10% 45%;
+    --border: 174 20% 88%;
+    --input: 174 20% 88%;
+    --primary: 174 72% 32%;
     --primary-foreground: 0 0% 98%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 174 30% 90%;
+    --accent-foreground: 174 72% 20%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 240 10% 3.9%;
-      --foreground: 0 0% 98%;
-      --muted: 240 3.7% 15.9%;
-      --muted-foreground: 240 5% 64.9%;
-      --border: 240 3.7% 22%;
-      --input: 240 3.7% 22%;
-      --primary: 0 0% 98%;
-      --primary-foreground: 240 5.9% 10%;
-      --accent: 240 3.7% 15.9%;
-      --accent-foreground: 0 0% 98%;
-      --card: 240 10% 6%;
-      --card-foreground: 0 0% 98%;
+      --background: 220 13% 9%;
+      --foreground: 0 0% 95%;
+      --muted: 174 10% 16%;
+      --muted-foreground: 174 10% 58%;
+      --border: 174 10% 22%;
+      --input: 174 10% 22%;
+      --primary: 174 72% 42%;
+      --primary-foreground: 0 0% 4%;
+      --accent: 174 15% 18%;
+      --accent-foreground: 174 60% 75%;
+      --card: 220 13% 11%;
+      --card-foreground: 0 0% 95%;
     }
   }
 
@@ -45,7 +45,57 @@
   }
 }
 
-/* Tiptap editor prose */
+/* Fortune Sheet — hide sheet tabs (single-sheet mode) */
+.fortune-sheet-tabs-container,
+.fortune-sheet-tab-add-btn {
+  display: none !important;
+}
+
+/* Fortune Sheet — dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  .fortune-sheet-container,
+  .fortune-sheet-main,
+  .fortune-sheet-cell-main,
+  .fortune-sheet-row-header,
+  .fortune-sheet-col-header,
+  .fortune-sheet-col-header-wrap,
+  .fortune-sheet-row-header-wrap {
+    background-color: hsl(240 10% 6%) !important;
+    color: hsl(0 0% 98%) !important;
+  }
+
+  .fortune-sheet-col-header-item,
+  .fortune-sheet-row-header-item,
+  .fortune-sheet-col-header,
+  .fortune-sheet-row-header {
+    background-color: hsl(240 3.7% 15.9%) !important;
+    border-color: hsl(240 3.7% 22%) !important;
+    color: hsl(240 5% 64.9%) !important;
+  }
+
+  .fortune-sheet-cell {
+    border-color: hsl(240 3.7% 22%) !important;
+    background-color: hsl(240 10% 6%) !important;
+    color: hsl(0 0% 98%) !important;
+  }
+
+  .fortune-sheet-toolbar,
+  .fortune-sheet-toolbar-wrap {
+    background-color: hsl(240 3.7% 15.9%) !important;
+    border-color: hsl(240 3.7% 22%) !important;
+    color: hsl(0 0% 98%) !important;
+  }
+
+  .fortune-sheet-toolbar-btn:hover {
+    background-color: hsl(240 3.7% 22%) !important;
+  }
+
+  input.fortune-sheet-input-box {
+    background-color: hsl(240 10% 6%) !important;
+    color: hsl(0 0% 98%) !important;
+    border-color: hsl(240 3.7% 22%) !important;
+  }
+}
 .ProseMirror {
   @apply outline-none;
   min-height: 300px;

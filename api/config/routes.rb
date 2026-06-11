@@ -18,10 +18,10 @@ Rails.application.routes.draw do
       end
 
       resources :documents, only: [] do
-        resources :tasks, shallow: true
+        resources :tasks, only: [:index, :create], shallow: true
       end
 
-      resources :tasks, only: [:index, :update, :destroy]
+      resources :tasks, only: [:index, :create, :update, :destroy]
 
       resources :uploads, only: [:create]
 

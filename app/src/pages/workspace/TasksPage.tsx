@@ -1,9 +1,28 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, X, ArrowRight, Play, Loader2 } from 'lucide-react'
-import Sidebar from '@/components/file-manager/Sidebar'
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  useSensor,
+  useSensors,
+  closestCorners,
+  useDroppable,
+  type DragStartEvent,
+  type DragOverEvent,
+  type DragEndEvent,
+  type UniqueIdentifier,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import WorkspaceLayout from '@/components/WorkspaceLayout'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '@/api/tasks'
-import { useWorkspace } from '@/api/workspace'
 import type { Task } from '@/types'
 
 const KANBAN_STATUSES: { key: Task['status']; label: string; dot: string }[] = [
@@ -12,6 +31,8 @@ const KANBAN_STATUSES: { key: Task['status']; label: string; dot: string }[] = [
   { key: 'in_review', label: 'In Review', dot: 'bg-yellow-500' },
   { key: 'done', label: 'Done', dot: 'bg-green-500' },
 ]
+
+const KANBAN_KEYS = KANBAN_STATUSES.map((s) => s.key)
 
 const NEXT_STATUS: Record<Task['status'], Task['status'] | null> = {
   backlog: 'todo',
@@ -29,28 +50,141 @@ const STATUS_LABEL: Record<Task['status'], string> = {
   done: 'Done',
 }
 
+function isColumnId(id: UniqueIdentifier): id is Task['status'] {
+  return KANBAN_KEYS.includes(id as Task['status'])
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────────
+
+interface CardProps {
+  task: Task
+  onDelete: () => void
+  onNext: (() => void) | null
+  onNavigate: () => void
+  overlay?: boolean
+}
+
+function TaskCard({ task, onDelete, onNext, onNavigate, overlay }: CardProps) {
+  return (
+    <div className={`bg-card border rounded-lg p-3 group select-none ${overlay ? 'shadow-xl rotate-1 opacity-95' : ''}`}>
+      <div className="flex items-start gap-2">
+        <p className="text-sm leading-snug flex-1">{task.title}</p>
+        {!overlay && (
+          <button
+            onClick={onDelete}
+            className="hidden group-hover:flex shrink-0 text-muted-foreground hover:text-red-500"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        {task.document && (
+          <button
+            onClick={onNavigate}
+            className="text-xs text-muted-foreground hover:underline truncate max-w-[130px]"
+          >
+            {task.document.title}
+          </button>
+        )}
+        {onNext && !overlay && (
+          <button
+            onClick={onNext}
+            className="ml-auto text-muted-foreground hover:text-foreground"
+            title={`Move to ${STATUS_LABEL[NEXT_STATUS[task.status]!]}`}
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SortableCard(props: CardProps) {
+  const { setNodeRef, transform, transition, isDragging } = useSortable({ id: props.task.id })
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0 : 1 }}
+      className="cursor-grab active:cursor-grabbing"
+    >
+      <TaskCard {...props} />
+    </div>
+  )
+}
+
+// ── Column ────────────────────────────────────────────────────────────────────
+
+function KanbanColumn({ status, label, dot, tasks, children }: {
+  status: Task['status']
+  label: string
+  dot: string
+  tasks: Task[]
+  children: React.ReactNode
+}) {
+  const { setNodeRef } = useDroppable({ id: status })
+  return (
+    <div className="w-64 flex flex-col shrink-0">
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+        <span className="text-sm font-semibold">{label}</span>
+        <span className="text-xs text-muted-foreground">{tasks.length}</span>
+      </div>
+      <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <div ref={setNodeRef} className="flex flex-col gap-2 flex-1 min-h-[40px]">
+          {children}
+        </div>
+      </SortableContext>
+    </div>
+  )
+}
+
+// ── AddTaskInput ──────────────────────────────────────────────────────────────
+
 interface AddTaskInputProps {
-  onAdd: (title: string) => void
+  onAdd: (title: string, dueDate: string) => void
   onCancel: () => void
 }
 
 function AddTaskInput({ onAdd, onCancel }: AddTaskInputProps) {
-  const [value, setValue] = useState('')
+  const [title, setTitle] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const titleRef = useRef('')
+  const dateRef = useRef<HTMLInputElement>(null)
+
+  function commit() {
+    if (titleRef.current.trim()) onAdd(titleRef.current.trim(), dueDate)
+    else onCancel()
+  }
+
   return (
-    <input
-      autoFocus
-      placeholder="Task title…"
-      className="w-full text-sm outline-none bg-transparent border-b border-input pb-1"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && value.trim()) onAdd(value.trim())
-        if (e.key === 'Escape') onCancel()
-      }}
-      onBlur={onCancel}
-    />
+    <div className="flex items-center gap-2">
+      <input
+        autoFocus
+        placeholder="Task title…"
+        className="flex-1 text-sm outline-none bg-transparent border-b border-input pb-1"
+        value={title}
+        onChange={(e) => { setTitle(e.target.value); titleRef.current = e.target.value }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') onCancel()
+        }}
+        onBlur={(e) => { if (!dateRef.current?.contains(e.relatedTarget as Node)) commit() }}
+      />
+      <input
+        ref={dateRef}
+        type="date"
+        className="text-xs text-muted-foreground bg-transparent border-b border-input pb-1 outline-none cursor-pointer"
+        value={dueDate}
+        onChange={(e) => setDueDate(e.target.value)}
+        onBlur={commit}
+      />
+    </div>
   )
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function TasksPage() {
   const navigate = useNavigate()
@@ -58,24 +192,110 @@ export default function TasksPage() {
   const view = searchParams.get('view') === 'kanban' ? 'kanban' : 'backlog'
 
   const { data: tasks = [], isLoading } = useTasks()
-  const { data: workspace } = useWorkspace()
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
 
   const [addingTo, setAddingTo] = useState<Task['status'] | null>(null)
 
-  const allDocs = workspace?.folders?.flatMap((f) => f.documents ?? []) ?? []
-  const canAdd = allDocs.length > 0
+  useEffect(() => {
+    if (searchParams.get('new') === '1') setAddingTo('backlog')
+  }, [searchParams])
 
-  function createTaskWith(title: string, status: Task['status']) {
-    if (!canAdd) return
-    createTask.mutate({ documentId: allDocs[0].id, title, status })
+  // Local task list for optimistic DnD reordering
+  const localRef = useRef<Task[]>(tasks)
+  const [localTasks, setLocalTasksState] = useState<Task[]>(tasks)
+  const [activeId, setActiveId] = useState<number | null>(null)
+
+  function setLocalTasks(updater: (prev: Task[]) => Task[]) {
+    setLocalTasksState((prev) => {
+      const next = updater(prev)
+      localRef.current = next
+      return next
+    })
+  }
+
+  // Sync server → local when not dragging
+  useEffect(() => {
+    if (activeId === null) {
+      localRef.current = tasks
+      setLocalTasksState(tasks)
+    }
+  }, [tasks, activeId])
+
+  const activeTask = activeId !== null ? localRef.current.find((t) => t.id === activeId) ?? null : null
+
+  const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 5 } }))
+
+  function onDragStart({ active }: DragStartEvent) {
+    setActiveId(active.id as number)
+  }
+
+  function onDragOver({ active, over }: DragOverEvent) {
+    if (!over) return
+    const dragId = active.id as number
+    const overId = over.id
+
+    const current = localRef.current
+    const dragTask = current.find((t) => t.id === dragId)
+    if (!dragTask) return
+
+    const targetStatus = isColumnId(overId)
+      ? overId
+      : current.find((t) => t.id === (overId as number))?.status
+
+    if (!targetStatus || targetStatus === dragTask.status) return
+
+    setLocalTasks((prev) =>
+      prev.map((t) => (t.id === dragId ? { ...t, status: targetStatus } : t))
+    )
+  }
+
+  function onDragEnd({ active, over }: DragEndEvent) {
+    const dragId = active.id as number
+    const current = localRef.current
+
+    if (over && !isColumnId(over.id)) {
+      const overId = over.id as number
+      const dragTask = current.find((t) => t.id === dragId)
+      const overTask = current.find((t) => t.id === overId)
+
+      if (dragTask && overTask && dragTask.status === overTask.status) {
+        const col = current.filter((t) => t.status === dragTask.status)
+        const from = col.findIndex((t) => t.id === dragId)
+        const to = col.findIndex((t) => t.id === overId)
+        if (from !== -1 && to !== -1 && from !== to) {
+          const reordered = arrayMove(col, from, to)
+          setLocalTasks((prev) => [
+            ...prev.filter((t) => t.status !== dragTask.status),
+            ...reordered,
+          ])
+        }
+      }
+    }
+
+    // Persist status change if it moved columns
+    const original = tasks.find((t) => t.id === dragId)
+    const updated = localRef.current.find((t) => t.id === dragId)
+    if (original && updated && original.status !== updated.status) {
+      updateTask.mutate({ id: dragId, status: updated.status })
+    }
+
+    setActiveId(null)
+  }
+
+  function onDragCancel() {
+    setActiveId(null)
+    localRef.current = tasks
+    setLocalTasksState(tasks)
+  }
+
+  function createTaskWith(title: string, status: Task['status'], dueDate: string) {
+    createTask.mutate({ title, status, dueDate })
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
+    <WorkspaceLayout>
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b px-6 py-3 shrink-0 flex items-center gap-4">
           <h1 className="text-xl font-semibold">Tasks</h1>
@@ -102,78 +322,63 @@ export default function TasksPage() {
         )}
 
         {!isLoading && view === 'kanban' && (
-          <div className="flex-1 overflow-auto p-4">
-            <div className="flex gap-4 h-full min-w-max">
-              {KANBAN_STATUSES.map(({ key, label, dot }) => {
-                const columnTasks = tasks.filter((t) => t.status === key)
-                return (
-                  <div key={key} className="w-64 flex flex-col gap-2 shrink-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-                      <span className="text-sm font-semibold">{label}</span>
-                      <span className="text-xs text-muted-foreground">{columnTasks.length}</span>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      {columnTasks.map((task) => (
-                        <div key={task.id} className="bg-card border rounded-lg p-3 group">
-                          <div className="flex items-start gap-2">
-                            <p className="text-sm leading-snug flex-1">{task.title}</p>
-                            <button
-                              onClick={() => deleteTask.mutate(task.id)}
-                              className="hidden group-hover:flex shrink-0 text-muted-foreground hover:text-red-500"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <div className="flex items-center justify-between mt-2">
-                            {task.document && (
-                              <button
-                                onClick={() => navigate(`/documents/${task.document_id}`)}
-                                className="text-xs text-muted-foreground hover:underline truncate max-w-[130px]"
-                              >
-                                {task.document.title}
-                              </button>
-                            )}
-                            {NEXT_STATUS[task.status] && (
-                              <button
-                                onClick={() =>
-                                  updateTask.mutate({ id: task.id, status: NEXT_STATUS[task.status]! })
-                                }
-                                className="ml-auto text-muted-foreground hover:text-foreground"
-                                title={`Move to ${STATUS_LABEL[NEXT_STATUS[task.status]!]}`}
-                              >
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+            onDragCancel={onDragCancel}
+          >
+            <div className="flex-1 overflow-auto p-4">
+              <div className="flex gap-4 h-full min-w-max">
+                {KANBAN_STATUSES.map(({ key, label, dot }) => {
+                  const colTasks = localTasks.filter((t) => t.status === key)
+                  return (
+                    <KanbanColumn key={key} status={key} label={label} dot={dot} tasks={colTasks}>
+                      {colTasks.map((task) => (
+                        <SortableCard
+                          key={task.id}
+                          task={task}
+                          onDelete={() => deleteTask.mutate(task.id)}
+                          onNext={NEXT_STATUS[task.status] ? () => updateTask.mutate({ id: task.id, status: NEXT_STATUS[task.status]! }) : null}
+                          onNavigate={() => navigate(`/documents/${task.document_id}`)}
+                        />
                       ))}
-
                       {addingTo === key ? (
                         <div className="bg-card border rounded-lg p-2">
                           <AddTaskInput
-                            onAdd={(title) => { createTaskWith(title, key); setAddingTo(null) }}
+                            onAdd={(title, dueDate) => { createTaskWith(title, key, dueDate); setAddingTo(null) }}
                             onCancel={() => setAddingTo(null)}
                           />
                         </div>
                       ) : (
                         <button
-                          onClick={() => canAdd && setAddingTo(key)}
-                          disabled={!canAdd}
-                          title={!canAdd ? 'Create a document first' : 'Add task'}
-                          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-1 py-1 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                          onClick={() => setAddingTo(key)}
+                          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-1 py-1 rounded"
                         >
                           <Plus className="w-3.5 h-3.5" />
                           Add task
                         </button>
                       )}
-                    </div>
-                  </div>
-                )
-              })}
+                    </KanbanColumn>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+
+            <DragOverlay>
+              {activeTask && (
+                <TaskCard
+                  task={activeTask}
+                  onDelete={() => {}}
+                  onNext={null}
+                  onNavigate={() => {}}
+                  overlay
+                />
+              )}
+            </DragOverlay>
+          </DndContext>
         )}
 
         {!isLoading && view === 'backlog' && (
@@ -186,10 +391,8 @@ export default function TasksPage() {
                   <span className="text-xs text-muted-foreground">{tasks.filter((t) => t.status === 'backlog').length}</span>
                 </div>
                 <button
-                  onClick={() => canAdd && setAddingTo('backlog')}
-                  disabled={!canAdd}
-                  title={!canAdd ? 'Create a document first' : 'Add task'}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                  onClick={() => setAddingTo('backlog')}
+                  className="text-muted-foreground hover:text-foreground"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -198,7 +401,7 @@ export default function TasksPage() {
               {addingTo === 'backlog' && (
                 <div className="mb-2 px-1">
                   <AddTaskInput
-                    onAdd={(title) => { createTaskWith(title, 'backlog'); setAddingTo(null) }}
+                    onAdd={(title, dueDate) => { createTaskWith(title, 'backlog', dueDate); setAddingTo(null) }}
                     onCancel={() => setAddingTo(null)}
                   />
                 </div>
@@ -241,6 +444,6 @@ export default function TasksPage() {
           </div>
         )}
       </div>
-    </div>
+    </WorkspaceLayout>
   )
 }

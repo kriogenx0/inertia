@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
-  FolderPlus, CheckSquare, LogOut, FilePlus, FileText,
-  Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
+  FolderPlus, CheckSquare, FilePlus, FileText,
+  Table as TableIcon, Pin, Folder, Loader2, CalendarDays, ChevronRight,
 } from 'lucide-react'
 import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
 import { useAuthStore } from '@/store/auth'
@@ -17,19 +17,29 @@ export default function Sidebar() {
   const createDocument = useCreateDocument()
   const pinDocument = usePinDocument()
   const pinFolder = usePinFolder()
-  const logout = useAuthStore((s) => s.logout)
+  const { user, logout } = useAuthStore()
+  const [tasksOpen, setTasksOpen] = useState(true)
+  const [eventsOpen, setEventsOpen] = useState(true)
   const [addingFolder, setAddingFolder] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const creatingRef = useRef(false)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const createNewDocumentRef = useRef(createNewDocument)
   createNewDocumentRef.current = createNewDocument
 
+  const initials = user?.name
+    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?'
+
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
 
-  // Cmd+N shortcut — ref keeps closure fresh so it always sees latest workspace state
+  // Cmd+N → new document, Cmd+Option+N → new task
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key === 'n') {
+        e.preventDefault()
+        navigate('/tasks?view=backlog&new=1')
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
         e.preventDefault()
         createNewDocumentRef.current()
       }
@@ -85,41 +95,82 @@ export default function Sidebar() {
   return (
     <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
       {/* Header */}
-      <div className="px-3 py-3 border-b">
+      <div className="px-3 pt-8 pb-3 border-b" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <p className="font-semibold text-sm">Inertia</p>
         <p className="text-xs text-muted-foreground truncate">{workspace?.name ?? 'My Workspace'}</p>
       </div>
 
       {/* Nav */}
       <div className="px-2 py-2 border-b flex flex-col gap-0.5">
-        <button
-          onClick={() => navigate('/tasks?view=backlog')}
-          className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm hover:bg-accent ${location.pathname === '/tasks' ? 'bg-accent' : ''}`}
-        >
-          <CheckSquare className="w-4 h-4 text-muted-foreground" />
-          Tasks
-        </button>
-        <div className="pl-6 flex flex-col gap-0.5">
-          <button
-            onClick={() => navigate('/tasks?view=backlog')}
-            className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=backlog') || (location.pathname === '/tasks' && !location.search) ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-            Backlog
-          </button>
-          <button
-            onClick={() => navigate('/tasks?view=kanban')}
-            className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=kanban') ? 'text-foreground' : 'text-muted-foreground'}`}
-          >
-            Kanban
-          </button>
+        {/* Tasks */}
+        <div>
+          <div className={`flex items-center rounded-md text-sm hover:bg-accent ${location.pathname === '/tasks' ? 'bg-accent' : ''}`}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setTasksOpen((o) => !o) }}
+              className="p-1.5 pl-2 text-muted-foreground shrink-0"
+            >
+              <ChevronRight className={`w-3 h-3 transition-transform ${tasksOpen ? 'rotate-90' : ''}`} />
+            </button>
+            <button
+              onClick={() => navigate('/tasks?view=backlog')}
+              className="flex items-center gap-2 flex-1 py-1.5 pr-2"
+            >
+              <CheckSquare className="w-4 h-4 text-muted-foreground shrink-0" />
+              Tasks
+            </button>
+          </div>
+          {tasksOpen && (
+            <div className="pl-9 flex flex-col gap-0.5">
+              <button
+                onClick={() => navigate('/tasks?view=backlog')}
+                className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.pathname === '/tasks' && !location.search.includes('view=kanban') ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                Backlog
+              </button>
+              <button
+                onClick={() => navigate('/tasks?view=kanban')}
+                className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=kanban') ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                Kanban
+              </button>
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => navigate('/events')}
-          className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm hover:bg-accent ${location.pathname === '/events' ? 'bg-accent' : ''}`}
-        >
-          <CalendarDays className="w-4 h-4 text-muted-foreground" />
-          Events
-        </button>
+
+        {/* Events */}
+        <div>
+          <div className={`flex items-center rounded-md text-sm hover:bg-accent ${location.pathname === '/events' ? 'bg-accent' : ''}`}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setEventsOpen((o) => !o) }}
+              className="p-1.5 pl-2 text-muted-foreground shrink-0"
+            >
+              <ChevronRight className={`w-3 h-3 transition-transform ${eventsOpen ? 'rotate-90' : ''}`} />
+            </button>
+            <button
+              onClick={() => navigate('/events')}
+              className="flex items-center gap-2 flex-1 py-1.5 pr-2"
+            >
+              <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0" />
+              Events
+            </button>
+          </div>
+          {eventsOpen && (
+            <div className="pl-9 flex flex-col gap-0.5">
+              <button
+                onClick={() => navigate('/events?view=list')}
+                className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.pathname === '/events' && !location.search.includes('view=month') ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                List
+              </button>
+              <button
+                onClick={() => navigate('/events?view=month')}
+                className={`w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=month') ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                Month
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-3">
@@ -179,7 +230,12 @@ export default function Sidebar() {
         {/* Documents section (unified tree) */}
         <div>
           <div className="flex items-center justify-between px-3 mb-1">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Documents</span>
+            <button
+              onClick={() => navigate('/documents')}
+              className="text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+            >
+              Documents
+            </button>
             <div className="flex items-center gap-0.5">
               <button
                 title="New document (⌘N)"
@@ -241,16 +297,43 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer — user avatar */}
       <div className="border-t px-2 py-2">
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+          onClick={() => setAccountOpen(true)}
+          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm hover:bg-accent"
         >
-          <LogOut className="w-4 h-4" />
-          Sign out
+          <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
+            {initials}
+          </div>
+          <span className="flex-1 text-left truncate text-foreground">{user?.name ?? 'Account'}</span>
         </button>
       </div>
+
+      {/* Account panel */}
+      {accountOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAccountOpen(false)}>
+          <div className="bg-card border rounded-xl shadow-xl w-80 p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shrink-0">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{user?.name}</p>
+                <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+              </div>
+            </div>
+            <div className="border-t pt-4">
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-2 rounded-md text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 border border-red-200 dark:border-red-900"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

@@ -1,9 +1,10 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { Workbook } from '@fortune-sheet/react'
 import '@fortune-sheet/react/dist/index.css'
 import { Loader2 } from 'lucide-react'
-import Sidebar from '@/components/file-manager/Sidebar'
+import WorkspaceLayout from '@/components/WorkspaceLayout'
 import { useDocument, useUpdateDocument } from '@/api/documents'
+import { useTabsStore } from '@/store/tabs'
 import type { Sheet } from '@fortune-sheet/core'
 
 const EMPTY_SHEETS: Sheet[] = [
@@ -25,8 +26,18 @@ export default function SpreadsheetEditor({ docId }: { docId: number }) {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const pendingRef = useRef<Sheet[] | null>(null)
+  const { openTab } = useTabsStore()
 
-  // Stable initial data — only recompute when switching documents
+  useEffect(() => {
+    if (!doc) return
+    openTab({
+      id: String(doc.id),
+      path: `/documents/${doc.id}`,
+      title: doc.title || 'Untitled',
+      docType: 'spreadsheet',
+    })
+  }, [doc?.id, doc?.title])
+
   const initialSheets = useMemo<Sheet[]>(
     () => (doc?.content?.sheets as Sheet[] | undefined) ?? EMPTY_SHEETS,
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,8 +63,7 @@ export default function SpreadsheetEditor({ docId }: { docId: number }) {
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
+    <WorkspaceLayout>
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="border-b px-3 py-1.5 flex items-center shrink-0">
           <span className="text-sm font-medium truncate">{doc?.title ?? 'Spreadsheet'}</span>
@@ -62,7 +72,6 @@ export default function SpreadsheetEditor({ docId }: { docId: number }) {
             {saveStatus === 'unsaved' && <div className="w-2 h-2 rounded-full bg-muted-foreground/60" />}
           </div>
         </div>
-        {/* height: 0 + flex-1 forces Fortune Sheet to fill the remaining space */}
         <div className="flex-1" style={{ height: 0 }}>
           <Workbook
             key={docId}
@@ -71,6 +80,6 @@ export default function SpreadsheetEditor({ docId }: { docId: number }) {
           />
         </div>
       </div>
-    </div>
+    </WorkspaceLayout>
   )
 }

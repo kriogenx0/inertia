@@ -15,6 +15,7 @@ import OrderedList from '@tiptap/extension-ordered-list'
 import ListItem from '@tiptap/extension-list-item'
 import CodeBlock from '@tiptap/extension-code-block'
 import HorizontalRule from '@tiptap/extension-horizontal-rule'
+import { TextSelection } from '@tiptap/pm/state'
 import TiptapImage from '@tiptap/extension-image'
 import Link from '@tiptap/extension-link'
 import Table from '@tiptap/extension-table'
@@ -50,7 +51,7 @@ import {
   Loader2,
   FileX,
 } from 'lucide-react'
-import Sidebar from '@/components/file-manager/Sidebar'
+import WorkspaceLayout from '@/components/WorkspaceLayout'
 import { useDocument, useUpdateDocument } from '@/api/documents'
 import { useCreateTask } from '@/api/tasks'
 import { useWorkspace } from '@/api/workspace'
@@ -59,6 +60,7 @@ import Video from '@/extensions/Video'
 import { WorkspaceTaskList } from '@/extensions/WorkspaceTaskList'
 import { WorkspaceTaskItem } from '@/extensions/WorkspaceTaskItem'
 import api from '@/lib/api'
+import { useTabsStore } from '@/store/tabs'
 
 // Enforce: document always starts with a heading followed by body content
 const CustomDocument = TiptapDocument.extend({ content: 'heading block*' })
@@ -130,6 +132,18 @@ export default function DocumentPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const pendingRef = useRef<{ title?: string; content?: Record<string, unknown> }>({})
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const { openTab, updateTitle } = useTabsStore()
+
+  // Open/update tab when doc loads
+  useEffect(() => {
+    if (!doc) return
+    openTab({
+      id: String(doc.id),
+      path: `/documents/${doc.id}`,
+      title: doc.title || 'Untitled',
+      docType: doc.doc_type,
+    })
+  }, [doc?.id, doc?.title, doc?.doc_type])
 
   // Always-current refs so stale closures in useEditor callbacks can read live values
   const workspaceRef = useRef(workspace)
@@ -155,7 +169,24 @@ export default function DocumentPage() {
       WorkspaceTaskList,
       WorkspaceTaskItem,
       CodeBlock,
-      HorizontalRule,
+      HorizontalRule.extend({
+        addCommands() {
+          return {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setHorizontalRule: () => ({ state, dispatch }: any) => {
+              const { tr, selection: { $from } } = state
+              const hr = state.schema.nodes.horizontalRule.create()
+              const para = state.schema.nodes.paragraph.create()
+              tr.replaceSelectionWith(hr)
+              const pos = tr.mapping.map($from.pos) + hr.nodeSize
+              tr.insert(pos, para)
+              tr.setSelection(TextSelection.near(tr.doc.resolve(pos)))
+              if (dispatch) dispatch(tr)
+              return true
+            },
+          }
+        },
+      }),
       TiptapImage,
       Link.configure({ openOnClick: false }),
       Video,
@@ -246,6 +277,7 @@ export default function DocumentPage() {
       try {
         await updateDocument.mutateAsync({ id: docId, ...toSave })
         setSaveStatus('saved')
+        if (toSave.title) updateTitle(String(docId), toSave.title)
         syncTaskNodes(currentEditor)
       } catch {
         setSaveStatus('unsaved')
@@ -280,12 +312,11 @@ export default function DocumentPage() {
 
   if (isLoading || !editor) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
+      <WorkspaceLayout>
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
-      </div>
+      </WorkspaceLayout>
     )
   }
 
@@ -295,18 +326,16 @@ export default function DocumentPage() {
 
   if (!doc) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
+      <WorkspaceLayout>
         <div className="flex-1 flex items-center justify-center">
           <FileX className="w-8 h-8 text-muted-foreground opacity-40" />
         </div>
-      </div>
+      </WorkspaceLayout>
     )
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
+    <WorkspaceLayout>
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
         <div className="border-b px-3 py-1 flex items-center gap-0.5 overflow-x-auto shrink-0">
@@ -469,6 +498,6 @@ export default function DocumentPage() {
           </div>
         </div>
       </div>
-    </div>
+    </WorkspaceLayout>
   )
 }

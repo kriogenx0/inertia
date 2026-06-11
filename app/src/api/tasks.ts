@@ -12,8 +12,11 @@ export function useTasks() {
 export function useCreateTask() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ documentId, ...data }: { documentId: number; title: string; status?: Task['status'] }) =>
-      api.post(`/api/v1/documents/${documentId}/tasks`, { task: data }).then((r) => r.data as Task),
+    mutationFn: (data: { title: string; status?: Task['status']; dueDate?: string; documentId?: number }) => {
+      const { documentId, dueDate, ...rest } = data
+      const url = documentId ? `/api/v1/documents/${documentId}/tasks` : '/api/v1/tasks'
+      return api.post(url, { task: { ...rest, due_date: dueDate } }).then((r) => r.data as Task)
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   })
 }
