@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { ChevronRight, Folder, FileText, TableIcon, Pin } from 'lucide-react'
 import {
   useCreateFolder, useCreateDocument, useDeleteFolder, useDeleteDocument,
@@ -139,12 +139,11 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
           {folder.documents?.map((doc) => {
             const active = location.pathname === `/documents/${doc.id}`
             return (
-              <button
+              <Link
                 key={doc.id}
-                type="button"
+                to={`/documents/${doc.id}`}
                 className={`flex items-center gap-1.5 w-full py-1 rounded-md text-sm hover:bg-accent ${active ? 'bg-accent' : ''}`}
                 style={{ paddingLeft: `${36 + indent}px`, paddingRight: '8px' }}
-                onClick={() => navigate(`/documents/${doc.id}`)}
                 onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setDocCtx({ x: e.clientX, y: e.clientY, doc }) }}
               >
                 {doc.doc_type === 'spreadsheet'
@@ -161,7 +160,7 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
                   <span className="flex-1 truncate text-left select-none">{doc.title}</span>
                 )}
                 {doc.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
-              </button>
+              </Link>
             )
           })}
         </div>

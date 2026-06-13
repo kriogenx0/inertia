@@ -423,9 +423,11 @@ function ListView({ events, onEventClick }: {
     <div className="flex-1 overflow-y-auto px-6 py-4">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
         {upcoming.length === 0 && past.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Trophy className="w-10 h-10 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">No events yet</p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <p className="text-lg font-medium">No events yet</p>
+              <p className="text-sm text-muted-foreground">Create an event to get started.</p>
+            </div>
           </div>
         )}
         {upcoming.length > 0 && (
