@@ -113,6 +113,9 @@ function EventSidebar({ state, onClose }: { state: SidebarState; onClose: () => 
   const [title, setTitle] = useState('')
   const [date, setDate] = useState(state?.mode === 'new' ? state.defaultDate : '')
   const [type, setType] = useState<'deadline' | 'milestone'>('milestone')
+  const [hasTime, setHasTime] = useState(false)
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -120,6 +123,9 @@ function EventSidebar({ state, onClose }: { state: SidebarState; onClose: () => 
       setTitle('')
       setDate(state.defaultDate)
       setType('milestone')
+      setHasTime(false)
+      setStartTime('')
+      setEndTime('')
       setTimeout(() => titleInputRef.current?.focus(), 20)
     }
   }, [state?.mode === 'new' ? state.defaultDate : null])
@@ -137,13 +143,19 @@ function EventSidebar({ state, onClose }: { state: SidebarState; onClose: () => 
     function submit(e: React.FormEvent) {
       e.preventDefault()
       if (!title.trim() || !date) return
-      createEvent.mutate({ title: title.trim(), date, event_type: type })
+      createEvent.mutate({
+        title: title.trim(),
+        date,
+        event_type: type,
+        start_time: hasTime && startTime ? startTime : undefined,
+        end_time: hasTime && endTime ? endTime : undefined,
+      })
       onClose()
     }
 
     return (
       <aside className={sidebarClass}>
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center justify-between px-4 pt-8 pb-3 border-b">
           <span className="font-semibold text-sm">New Event</span>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
@@ -167,6 +179,36 @@ function EventSidebar({ state, onClose }: { state: SidebarState; onClose: () => 
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasTime}
+                onChange={(e) => setHasTime(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-xs text-muted-foreground">Add time</span>
+            </label>
+            {hasTime && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="time"
+                  className="flex-1 text-sm outline-none bg-transparent border border-input rounded px-2 py-1"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  placeholder="Start"
+                />
+                <span className="text-xs text-muted-foreground">to</span>
+                <input
+                  type="time"
+                  className="flex-1 text-sm outline-none bg-transparent border border-input rounded px-2 py-1"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  placeholder="End"
+                />
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground">Type</label>
@@ -202,7 +244,7 @@ function EventSidebar({ state, onClose }: { state: SidebarState; onClose: () => 
 
   return (
     <aside className={sidebarClass}>
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 pt-8 pb-3 border-b">
         <div className="flex items-center gap-2 min-w-0">
           <EventTypeIcon
             type={event.event_type}
@@ -216,12 +258,17 @@ function EventSidebar({ state, onClose }: { state: SidebarState; onClose: () => 
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {/* Date */}
+        {/* Date & time */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">Date</p>
           <p className={`text-sm font-medium ${dateBadgeClass(event.date)}`}>
             {format(new Date(event.date + 'T00:00:00'), 'MMMM d, yyyy')}
           </p>
+          {(event.start_time || event.end_time) && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {event.start_time ?? '—'}{event.end_time ? ` → ${event.end_time}` : ''}
+            </p>
+          )}
         </div>
 
         {/* Type */}

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_06_11_051106) do
+ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -47,6 +47,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_11_051106) do
     t.bigint "workspace_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.time "start_time"
+    t.time "end_time"
     t.index ["workspace_id", "date"], name: "index_events_on_workspace_id_and_date"
     t.index ["workspace_id"], name: "index_events_on_workspace_id"
   end

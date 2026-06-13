@@ -43,6 +43,8 @@ export interface WorkspaceEvent {
   title: string
   description: string | null
   date: string
+  start_time: string | null
+  end_time: string | null
   event_type: 'deadline' | 'milestone'
   tasks: Task[]
   created_at: string
