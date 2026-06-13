@@ -37,6 +37,7 @@ export default function App() {
         }
       />
       <Route
+        path="/documents/:id"
         element={
           <PrivateRoute>
             <DocumentPage />
