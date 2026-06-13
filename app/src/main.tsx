@@ -11,10 +11,31 @@ const queryClient = new QueryClient({
   },
 })
 
+// Thin drag region for the macOS traffic light area only
+function TitleBarDragRegion() {
+  const isElectron = navigator.userAgent.toLowerCase().includes('electron')
+  if (!isElectron) return null
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '28px',
+        WebkitAppRegion: 'drag',
+        zIndex: 9999,
+        pointerEvents: 'none',
+      } as React.CSSProperties}
+    />
+  )
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <TitleBarDragRegion />
         <App />
       </BrowserRouter>
     </QueryClientProvider>

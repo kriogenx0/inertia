@@ -4,6 +4,7 @@ import { Plus, X, ArrowRight, Play, Loader2, Search, Filter } from 'lucide-react
 import {
   DndContext,
   DragOverlay,
+  PointerSensor,
   MouseSensor,
   useSensor,
   useSensors,
@@ -59,25 +60,17 @@ function isColumnId(id: UniqueIdentifier): id is Task['status'] {
 
 interface CardProps {
   task: Task
-  onDelete: () => void
+  onDelete?: () => void
   onNext: (() => void) | null
   onNavigate: () => void
   overlay?: boolean
 }
 
-function TaskCard({ task, onDelete, onNext, onNavigate, overlay }: CardProps) {
+function TaskCard({ task, onNext, onNavigate, overlay }: Omit<CardProps, 'onDelete'>) {
   return (
-    <div className={`bg-card border rounded-lg p-3 group select-none ${overlay ? 'shadow-xl rotate-1 opacity-95' : ''}`}>
+    <div className={`bg-card border rounded-lg p-3 select-none ${overlay ? 'shadow-xl rotate-1 opacity-95' : ''}`}>
       <div className="flex items-start gap-2">
         <p className="text-sm leading-snug flex-1">{task.title}</p>
-        {!overlay && (
-          <button
-            onClick={onDelete}
-            className="hidden group-hover:flex shrink-0 text-muted-foreground hover:text-red-500"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
       </div>
       <div className="flex items-center justify-between mt-2">
         {task.document && (
@@ -102,7 +95,7 @@ function TaskCard({ task, onDelete, onNext, onNavigate, overlay }: CardProps) {
   )
 }
 
-function SortableCard(props: CardProps) {
+function SortableCard(props: Omit<CardProps, 'onDelete'>) {
   const { setNodeRef, transform, transition, isDragging } = useSortable({ id: props.task.id })
   return (
     <div
@@ -237,7 +230,10 @@ export default function TasksPage() {
 
   const activeTask = activeId !== null ? localRef.current.find((t) => t.id === activeId) ?? null : null
 
-  const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 5 } }))
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  )
 
   function onDragStart({ active }: DragStartEvent) {
     setActiveId(active.id as number)
@@ -408,7 +404,6 @@ export default function TasksPage() {
                         <SortableCard
                           key={task.id}
                           task={task}
-                          onDelete={() => deleteTask.mutate(task.id)}
                           onNext={NEXT_STATUS[task.status] ? () => updateTask.mutate({ id: task.id, status: NEXT_STATUS[task.status]! }) : null}
                           onNavigate={() => navigate(`/documents/${task.document_id}`)}
                         />
@@ -439,7 +434,6 @@ export default function TasksPage() {
               {activeTask && (
                 <TaskCard
                   task={activeTask}
-                  onDelete={() => {}}
                   onNext={null}
                   onNavigate={() => {}}
                   overlay

@@ -95,7 +95,7 @@ export default function Sidebar() {
   return (
     <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
       {/* Header */}
-      <div className="px-3 pt-8 pb-3 border-b" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+      <div className="px-3 pt-8 pb-3 border-b">
         <p className="font-semibold text-sm">Inertia</p>
         <p className="text-xs text-muted-foreground truncate">{workspace?.name ?? 'My Workspace'}</p>
       </div>
