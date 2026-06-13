@@ -2,7 +2,9 @@ module Api
   module V1
     class WorkspacesController < ApplicationController
       def show
-        render json: WorkspaceBlueprint.render(current_user.workspace, view: :with_folders)
+        workspace = current_user.workspace
+        workspace.folders.includes(children: { children: :documents }, documents: []).load
+        render json: WorkspaceBlueprint.render(workspace, view: :with_folders)
       end
 
       def update

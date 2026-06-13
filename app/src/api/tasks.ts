@@ -2,10 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import type { Task } from '@/types'
 
-export function useTasks() {
+export interface TaskFilters {
+  q?: string
+  status?: string
+  folder_id?: number
+  document_id?: number
+}
+
+export function useTasks(filters: TaskFilters = {}) {
   return useQuery<Task[]>({
-    queryKey: ['tasks'],
-    queryFn: () => api.get('/api/v1/tasks').then((r) => r.data),
+    queryKey: ['tasks', filters],
+    queryFn: () => api.get('/api/v1/tasks', { params: filters }).then((r) => r.data),
   })
 }
 

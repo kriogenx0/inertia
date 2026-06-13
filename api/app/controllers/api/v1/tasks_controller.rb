@@ -4,11 +4,11 @@ module Api
       before_action :set_task, only: [:update, :destroy]
 
       def index
-        tasks = if params[:document_id]
-          current_workspace.tasks.where(document_id: params[:document_id])
-        else
-          current_workspace.tasks
-        end
+        tasks = current_workspace.tasks.includes(:document)
+        tasks = tasks.where(document_id: params[:document_id]) if params[:document_id]
+        tasks = tasks.where(status: params[:status]) if params[:status]
+        tasks = tasks.joins(:document).where(documents: { folder_id: params[:folder_id] }) if params[:folder_id]
+        tasks = tasks.where("tasks.title ILIKE ?", "%#{params[:q]}%") if params[:q]
         render json: TaskBlueprint.render(tasks, view: :with_document)
       end
 

@@ -4,14 +4,14 @@ module Api
       before_action :set_event, only: [:update, :destroy]
 
       def index
-        events = current_user.workspace.events.includes(:tasks).order(:date)
+        events = current_user.workspace.events.includes(tasks: :document).order(:date)
         render json: EventBlueprint.render(events, view: :with_tasks)
       end
 
       def create
         event = current_user.workspace.events.build(event_params)
         if event.save
-          render json: EventBlueprint.render(event, view: :with_tasks), status: :created
+          render json: EventBlueprint.render(event.reload.tap { |e| e.association(:tasks).load }, view: :with_tasks), status: :created
         else
           render json: { errors: event.errors.full_messages }, status: :unprocessable_entity
         end
@@ -33,7 +33,7 @@ module Api
       private
 
       def set_event
-        @event = current_user.workspace.events.find(params[:id])
+        @event = current_user.workspace.events.includes(tasks: :document).find(params[:id])
       end
 
       def event_params

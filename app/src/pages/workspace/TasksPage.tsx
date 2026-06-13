@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, X, ArrowRight, Play, Loader2 } from 'lucide-react'
+import { Plus, X, ArrowRight, Play, Loader2, Search, Filter } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -22,7 +22,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import WorkspaceLayout from '@/components/WorkspaceLayout'
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '@/api/tasks'
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, type TaskFilters } from '@/api/tasks'
+import { useWorkspace } from '@/api/workspace'
 import type { Task } from '@/types'
 
 const KANBAN_STATUSES: { key: Task['status']; label: string; dot: string }[] = [
@@ -191,7 +192,18 @@ export default function TasksPage() {
   const [searchParams] = useSearchParams()
   const view = searchParams.get('view') === 'kanban' ? 'kanban' : 'backlog'
 
-  const { data: tasks = [], isLoading } = useTasks()
+  const [filters, setFilters] = useState<TaskFilters>({})
+  const [showFilters, setShowFilters] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
+  const { data: workspace } = useWorkspace()
+
+  const activeFilters: TaskFilters = {
+    ...(filters.folder_id ? { folder_id: filters.folder_id } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(searchQ.trim() ? { q: searchQ.trim() } : {}),
+  }
+
+  const { data: tasks = [], isLoading } = useTasks(activeFilters)
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
@@ -313,7 +325,63 @@ export default function TasksPage() {
               Kanban
             </button>
           </div>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder="Search tasks…"
+                className="pl-7 pr-3 py-1 text-sm rounded-md border border-input bg-transparent outline-none focus:ring-1 focus:ring-primary w-44"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters((o) => !o)}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-sm border ${showFilters || filters.folder_id || filters.status ? 'border-primary text-primary' : 'border-input text-muted-foreground hover:text-foreground'}`}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Filter
+              {(filters.folder_id || filters.status) && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+            </button>
+          </div>
         </div>
+
+        {showFilters && (
+          <div className="border-b px-6 py-2 shrink-0 flex items-center gap-3 bg-muted/20">
+            <span className="text-xs text-muted-foreground font-medium">Folder</span>
+            <select
+              className="text-sm rounded border border-input bg-card px-2 py-1 outline-none"
+              value={filters.folder_id ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, folder_id: e.target.value ? Number(e.target.value) : undefined }))}
+            >
+              <option value="">All folders</option>
+              {workspace?.folders?.map((folder) => (
+                <option key={folder.id} value={folder.id}>{folder.name}</option>
+              ))}
+            </select>
+            <span className="text-xs text-muted-foreground font-medium">Status</span>
+            <select
+              className="text-sm rounded border border-input bg-card px-2 py-1 outline-none"
+              value={filters.status ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))}
+            >
+              <option value="">Any status</option>
+              <option value="backlog">Backlog</option>
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="in_review">In Review</option>
+              <option value="done">Done</option>
+            </select>
+            {(filters.folder_id || filters.status) && (
+              <button
+                onClick={() => setFilters({})}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+              >
+                <X className="w-3 h-3" /> Clear
+              </button>
+            )}
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex-1 flex items-center justify-center">

@@ -4,11 +4,9 @@ module Api
       before_action :set_event
 
       def create
-        task = Task.joins(document: :folder)
-          .where(folders: { workspace_id: current_user.workspace.id })
-          .find(params[:task_id])
+        task = current_user.workspace.tasks.find(params[:task_id])
         @event.event_tasks.find_or_create_by!(task: task)
-        render json: EventBlueprint.render(@event.reload, view: :with_tasks)
+        render json: EventBlueprint.render(@event.reload.tap { |e| e.association(:tasks).reset }, view: :with_tasks)
       rescue ActiveRecord::RecordNotFound
         render json: { error: 'Task not found' }, status: :not_found
       end
@@ -21,7 +19,7 @@ module Api
       private
 
       def set_event
-        @event = current_user.workspace.events.find(params[:event_id])
+        @event = current_user.workspace.events.includes(tasks: :document).find(params[:event_id])
       end
     end
   end

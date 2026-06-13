@@ -4,7 +4,10 @@ module Api
       before_action :set_folder, only: [:show, :update, :destroy]
 
       def index
-        folders = current_user.workspace.folders.where(parent_id: nil).order(:position, :name)
+        folders = current_user.workspace.folders
+          .where(parent_id: nil)
+          .includes(children: { children: :documents }, documents: [])
+          .order(:position, :name)
         render json: FolderBlueprint.render(folders, view: :with_children)
       end
 
@@ -37,7 +40,9 @@ module Api
       private
 
       def set_folder
-        @folder = current_user.workspace.folders.find(params[:id])
+        @folder = current_user.workspace.folders
+          .includes(children: { children: :documents }, documents: [])
+          .find(params[:id])
       end
 
       def folder_params
