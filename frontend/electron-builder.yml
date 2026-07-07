@@ -1,0 +1,9 @@
+appId: com.inertia.desktop
+productName: Inertia
+directories:
+  output: dist
+files:
+  - out/**/*
+mac:
+  category: public.app-category.productivity
+  target: dmg

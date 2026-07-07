@@ -1,0 +1,43 @@
+source "https://rubygems.org"
+
+ruby "3.2.4"
+
+gem "rails", "~> 7.1.6"
+
+# The original asset pipeline for Rails
+gem "sprockets-rails"
+
+# Use postgresql as the database for Active Record
+gem "pg", "~> 1.1"
+
+# Use the Puma web server
+gem "puma", ">= 5.0"
+
+# Use JavaScript with ESM import maps
+gem "importmap-rails"
+
+# Hotwire's SPA-like page accelerator
+gem "turbo-rails"
+
+# Hotwire's modest JavaScript framework
+gem "stimulus-rails"
+
+# Use Dart SASS
+gem "dartsass-rails"
+
+# Build JSON APIs with ease
+gem "jbuilder"
+
+# Reduces boot times through caching; required in config/boot.rb
+gem "bootsnap", require: false
+
+group :development, :test do
+  gem "debug", platforms: %i[ mri windows ]
+
+  # Rails 7.1's test runner doesn't yet support minitest 6's changed API.
+  gem "minitest", "~> 5.0"
+end
+
+group :development do
+  gem "web-console"
+end
