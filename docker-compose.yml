@@ -1,3 +1,5 @@
+name: inertia
+
 services:
   api:
     build:
@@ -19,7 +21,7 @@ services:
       REDIS_URL: redis://redis:6379
       RAILS_ENV: development
       JWT_SECRET_KEY: dev_secret_change_in_production
-      CORS_ORIGINS: http://localhost:5173
+      CORS_ORIGINS: http://localhost:5174
       BYPASS_AUTH: "true"
     volumes:
       - ./api:/rails
@@ -61,7 +63,7 @@ services:
         HTTPS_PROXY: ${HTTPS_PROXY:-}
         NO_PROXY: ${NO_PROXY:-}
     ports:
-      - "5173:5173"
+      - "5174:5174"
     environment:
       VITE_API_URL: http://localhost:3000
       VITE_BYPASS_AUTH: "true"

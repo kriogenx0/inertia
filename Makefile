@@ -30,7 +30,7 @@ dev: ## Rebuild all services, start detached, and open browser
 	$(COMPOSE) build
 	$(COMPOSE) up -d
 	@sleep 3
-	open http://localhost:5173
+	open http://localhost:5174
 
 dev-api: ## Rebuild and restart the API service only
 	$(COMPOSE) build api
@@ -43,9 +43,9 @@ dev-frontend: ## Rebuild and restart the frontend service only
 dev-mac: ## Start services, stream logs, and open the Electron app
 	$(COMPOSE) up -d
 	@echo "Waiting for frontend dev server..."
-	@until $$(curl -sf http://localhost:5173 > /dev/null); do sleep 1; done
+	@until $$(curl -sf http://localhost:5174 > /dev/null); do sleep 1; done
 	$(COMPOSE) logs -f &
-	cd app && VITE_DEV_SERVER_URL=http://localhost:5173 npx electron .
+	cd app && VITE_DEV_SERVER_URL=http://localhost:5174 npx electron .
 	@kill $$(jobs -p) 2>/dev/null || true
 
 build: ## Build all (API Docker image + macOS Electron app)
@@ -101,7 +101,7 @@ restart: ## Restart all services
 	$(COMPOSE) restart
 
 open: ## Open the app in the default browser
-	open http://localhost:5173
+	open http://localhost:5174
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 

@@ -10,7 +10,7 @@ docker compose up --build
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
+| Frontend | http://localhost:5174 |
 | API | http://localhost:3000 |
 | PostgreSQL | localhost:5432 |
 | Redis | localhost:6379 |

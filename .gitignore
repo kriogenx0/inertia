@@ -12,3 +12,11 @@
 *.swp
 *.swo
 .vscode
+
+# Backend (Rails)
+backend/tmp
+backend/log
+
+# Frontend
+frontend/node_modules
+frontend/dist
