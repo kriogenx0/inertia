@@ -1,11 +1,11 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all setup dev dev-api dev-frontend dev-mac build build-api build-frontend build-mac clean clean-api clean-frontend clean-mac help \
+.PHONY: all setup dev dev-backend dev-frontend dev-mac build build-backend build-frontend build-mac clean clean-backend clean-frontend clean-mac help \
         up up-d up-build down restart open \
-        logs logs-api logs-frontend ps \
+        logs logs-backend logs-frontend ps \
         db-migrate db-rollback db-reset db-seed db-status \
-        console routes shell-api shell-frontend \
-        typecheck test lint-api nuke
+        console routes shell-backend shell-frontend \
+        typecheck test lint-backend nuke
 
 # Rewrite localhost proxy URLs to host.docker.internal so containers can reach them
 HOST_PROXY = $(shell echo "$${HTTP_PROXY:-}" | sed 's/localhost/host.docker.internal/g')
@@ -13,16 +13,16 @@ COMPOSE     = HTTP_PROXY=$(HOST_PROXY) HTTPS_PROXY=$(HOST_PROXY) docker compose
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-all: setup dev ## Setup environment and start development (default)
+all: setup dev build-mac ## Setup environment, start development, and build the macOS app (default)
 
 setup: ## Build images, start services, prepare the database, and install local deps
 	$(COMPOSE) build
 	$(COMPOSE) up -d
 	@echo "Waiting for services to be ready..."
 	@sleep 5
-	$(COMPOSE) exec api bundle exec rails db:prepare
-	$(COMPOSE) exec api bundle exec rails db:seed
-	cd app && npm install
+	$(COMPOSE) exec backend bundle exec rails db:prepare
+	$(COMPOSE) exec backend bundle exec rails db:seed
+	cd frontend && npm install
 	@echo "✓ Setup complete"
 
 dev: ## Rebuild all services, start detached, and open browser
@@ -32,9 +32,9 @@ dev: ## Rebuild all services, start detached, and open browser
 	@sleep 3
 	open http://localhost:5174
 
-dev-api: ## Rebuild and restart the API service only
-	$(COMPOSE) build api
-	$(COMPOSE) up -d api
+dev-backend: ## Rebuild and restart the backend service only
+	$(COMPOSE) build backend
+	$(COMPOSE) up -d backend
 
 dev-frontend: ## Rebuild and restart the frontend service only
 	$(COMPOSE) build frontend
@@ -45,38 +45,38 @@ dev-mac: ## Start services, stream logs, and open the Electron app
 	@echo "Waiting for frontend dev server..."
 	@until $$(curl -sf http://localhost:5174 > /dev/null); do sleep 1; done
 	$(COMPOSE) logs -f &
-	cd app && VITE_DEV_SERVER_URL=http://localhost:5174 npx electron .
+	cd frontend && ELECTRON_DEV_SERVER_URL=http://localhost:5174 npx electron .
 	@kill $$(jobs -p) 2>/dev/null || true
 
-build: ## Build all (API Docker image + macOS Electron app)
-	$(COMPOSE) build api
-	cd app && npm install && npm run electron:build-mac
+build: ## Build all (backend Docker image + macOS Electron app)
+	$(COMPOSE) build backend
+	cd frontend && npm install && npm run electron:build-mac
 
-build-api: ## Build the API production Docker image
-	$(COMPOSE) build api
+build-backend: ## Build the backend production Docker image
+	$(COMPOSE) build backend
 
-build-frontend: ## Build the frontend for production (Vite bundle)
+build-frontend: ## Build the frontend for production (webpack bundle)
 	$(COMPOSE) run --rm frontend npm run build
 
-build-mac: ## Build the macOS Electron app (outputs to app/dist-electron)
-	cd app && npm install && npm run electron:build-mac
+build-mac: ## Build the macOS Electron app (outputs to frontend/dist-electron)
+	cd frontend && npm install && npm run electron:build-mac
 
 clean: ## Remove containers, volumes, all build artifacts, and Docker build cache
 	$(COMPOSE) down -v --remove-orphans
-	rm -rf app/dist app/dist-electron
+	rm -rf frontend/dist frontend/dist-electron
 	docker builder prune -f
 
-clean-api: ## Remove the API container and its volume
-	$(COMPOSE) rm -sf api
-	docker volume rm $$(docker volume ls -q | grep api_bundle) 2>/dev/null || true
+clean-backend: ## Remove the backend container and its volume
+	$(COMPOSE) rm -sf backend
+	docker volume rm $$(docker volume ls -q | grep backend_bundle) 2>/dev/null || true
 
-clean-frontend: ## Remove the frontend container, node_modules volume, and Vite build output
+clean-frontend: ## Remove the frontend container, node_modules volume, and webpack build output
 	$(COMPOSE) rm -sf frontend
-	docker volume rm $$(docker volume ls -q | grep app_node_modules) 2>/dev/null || true
-	rm -rf app/dist
+	docker volume rm $$(docker volume ls -q | grep frontend_node_modules) 2>/dev/null || true
+	rm -rf frontend/dist
 
 clean-mac: ## Remove the Electron build output
-	rm -rf app/dist app/dist-electron
+	rm -rf frontend/dist frontend/dist-electron
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 
@@ -108,8 +108,8 @@ open: ## Open the app in the default browser
 logs: ## Tail logs for all services
 	$(COMPOSE) logs -f
 
-logs-api: ## Tail API logs
-	$(COMPOSE) logs -f api
+logs-backend: ## Tail backend logs
+	$(COMPOSE) logs -f backend
 
 logs-frontend: ## Tail frontend logs
 	$(COMPOSE) logs -f frontend
@@ -120,30 +120,30 @@ ps: ## Show running service status
 # ── Database ──────────────────────────────────────────────────────────────────
 
 db-migrate: ## Run pending migrations
-	$(COMPOSE) exec api bundle exec rails db:migrate
+	$(COMPOSE) exec backend bundle exec rails db:migrate
 
 db-rollback: ## Roll back the last migration
-	$(COMPOSE) exec api bundle exec rails db:rollback
+	$(COMPOSE) exec backend bundle exec rails db:rollback
 
 db-reset: ## Drop, recreate, migrate, and seed the database
-	$(COMPOSE) exec api bundle exec rails db:drop db:create db:migrate db:seed
+	$(COMPOSE) exec backend bundle exec rails db:drop db:create db:migrate db:seed
 
 db-seed: ## Run database seeds
-	$(COMPOSE) exec api bundle exec rails db:seed
+	$(COMPOSE) exec backend bundle exec rails db:seed
 
 db-status: ## Show migration status
-	$(COMPOSE) exec api bundle exec rails db:migrate:status
+	$(COMPOSE) exec backend bundle exec rails db:migrate:status
 
 # ── Rails ─────────────────────────────────────────────────────────────────────
 
 console: ## Open a Rails console
-	$(COMPOSE) exec api bundle exec rails console
+	$(COMPOSE) exec backend bundle exec rails console
 
 routes: ## Print all API routes
-	$(COMPOSE) exec api bundle exec rails routes
+	$(COMPOSE) exec backend bundle exec rails routes
 
-shell-api: ## Open a shell in the API container
-	$(COMPOSE) exec api bash
+shell-backend: ## Open a shell in the backend container
+	$(COMPOSE) exec backend bash
 
 # ── Frontend ──────────────────────────────────────────────────────────────────
 
@@ -155,11 +155,11 @@ typecheck: ## Run TypeScript type-checker
 
 # ── Quality ───────────────────────────────────────────────────────────────────
 
-test: ## Run the API test suite
-	$(COMPOSE) exec api bundle exec rails test
+test: ## Run the backend test suite
+	$(COMPOSE) exec backend bundle exec rails test
 
-lint-api: ## Lint Ruby code with RuboCop
-	$(COMPOSE) exec api bundle exec rubocop --parallel || true
+lint-backend: ## Lint Ruby code with RuboCop
+	$(COMPOSE) exec backend bundle exec rubocop --parallel || true
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 

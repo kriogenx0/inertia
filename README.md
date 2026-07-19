@@ -19,8 +19,8 @@ docker compose up --build
 
 ```
 inertia/
-├── api/          # Rails 7 API
-├── app/          # React + Vite frontend
+├── backend/      # Rails 7 API
+├── frontend/     # React + webpack frontend
 └── docker-compose.yml
 ```
 
