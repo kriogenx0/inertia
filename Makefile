@@ -3,7 +3,7 @@
 .PHONY: all setup dev dev-backend dev-frontend dev-mac build build-backend build-frontend build-mac clean clean-backend clean-frontend clean-mac help \
         up up-d up-build down restart open \
         logs logs-backend logs-frontend ps \
-        db-migrate db-rollback db-reset db-seed db-status \
+        db-migrate db-rollback db-reset db-fake db-seed db-status \
         console routes shell-backend shell-frontend \
         typecheck test lint-backend nuke
 
@@ -125,8 +125,10 @@ db-migrate: ## Run pending migrations
 db-rollback: ## Roll back the last migration
 	$(COMPOSE) exec backend bundle exec rails db:rollback
 
-db-reset: ## Drop, recreate, migrate, and seed the database
+db-reset: ## Wipe the database and stage it with random test data (drop, recreate, migrate, seed)
 	$(COMPOSE) exec backend bundle exec rails db:drop db:create db:migrate db:seed
+
+db-fake: db-reset ## Alias for db-reset
 
 db-seed: ## Run database seeds
 	$(COMPOSE) exec backend bundle exec rails db:seed
