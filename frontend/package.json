@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "main": "electron/main.cjs",
   "scripts": {
+    "postinstall": "bash scripts/brand-electron-dev.sh",
     "dev": "webpack serve --mode development",
     "build": "tsc -b && webpack --mode production",
     "preview": "webpack serve --mode production",
