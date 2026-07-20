@@ -51,49 +51,21 @@
   display: none !important;
 }
 
-/* Fortune Sheet — dark mode overrides */
+/* Fortune Sheet — dark mode.
+   The grid, headers, and toolbar icons are drawn on <canvas>, and the
+   library exposes no theme API (checked @fortune-sheet/core's Settings
+   type — no `theme`/`darkMode` option, and it's already on the latest
+   1.0.4). CSS background/color rules can't reach canvas-drawn pixels at
+   all, so the previous attempt here (targeting class names like
+   .fortune-sheet-main, .fortune-sheet-cell, .fortune-sheet-toolbar) never
+   matched anything real — dead code. The actual DOM classes only include
+   things like .fortune-sheet-container, .fortune-sheet-canvas,
+   .fortune-sheet-area. Inverting + hue-rotating the whole container flips
+   its white/black chrome to dark/light while keeping any user-set cell
+   colors at roughly their original hue. */
 @media (prefers-color-scheme: dark) {
-  .fortune-sheet-container,
-  .fortune-sheet-main,
-  .fortune-sheet-cell-main,
-  .fortune-sheet-row-header,
-  .fortune-sheet-col-header,
-  .fortune-sheet-col-header-wrap,
-  .fortune-sheet-row-header-wrap {
-    background-color: hsl(240 10% 6%) !important;
-    color: hsl(0 0% 98%) !important;
-  }
-
-  .fortune-sheet-col-header-item,
-  .fortune-sheet-row-header-item,
-  .fortune-sheet-col-header,
-  .fortune-sheet-row-header {
-    background-color: hsl(240 3.7% 15.9%) !important;
-    border-color: hsl(240 3.7% 22%) !important;
-    color: hsl(240 5% 64.9%) !important;
-  }
-
-  .fortune-sheet-cell {
-    border-color: hsl(240 3.7% 22%) !important;
-    background-color: hsl(240 10% 6%) !important;
-    color: hsl(0 0% 98%) !important;
-  }
-
-  .fortune-sheet-toolbar,
-  .fortune-sheet-toolbar-wrap {
-    background-color: hsl(240 3.7% 15.9%) !important;
-    border-color: hsl(240 3.7% 22%) !important;
-    color: hsl(0 0% 98%) !important;
-  }
-
-  .fortune-sheet-toolbar-btn:hover {
-    background-color: hsl(240 3.7% 22%) !important;
-  }
-
-  input.fortune-sheet-input-box {
-    background-color: hsl(240 10% 6%) !important;
-    color: hsl(0 0% 98%) !important;
-    border-color: hsl(240 3.7% 22%) !important;
+  .fortune-sheet-container {
+    filter: invert(1) hue-rotate(180deg);
   }
 }
 .ProseMirror {

@@ -59,6 +59,16 @@ export default function LoginPage() {
         <p className="text-sm text-muted-foreground text-center">
           No account? <Link to="/signup" className="underline">Sign up</Link>
         </p>
+        {process.env.NODE_ENV !== 'production' && (
+          <button
+            type="button"
+            disabled={login.isPending}
+            onClick={() => login.mutate({ email: 'test@example.com', password: 'password123' })}
+            className="w-full border border-dashed rounded-lg py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-50"
+          >
+            Continue as test user (dev only)
+          </button>
+        )}
       </div>
     </div>
   )
