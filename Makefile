@@ -5,7 +5,7 @@
         logs logs-backend logs-frontend ps \
         db-migrate db-rollback db-reset db-fake db-seed db-status \
         console routes shell-backend shell-frontend \
-        typecheck test lint-backend nuke
+        typecheck test test-backend test-frontend test-fast lint-backend nuke hooks
 
 # Rewrite localhost proxy URLs to host.docker.internal so containers can reach them
 HOST_PROXY = $(shell echo "$${HTTP_PROXY:-}" | sed 's/localhost/host.docker.internal/g')
@@ -15,7 +15,7 @@ COMPOSE     = HTTP_PROXY=$(HOST_PROXY) HTTPS_PROXY=$(HOST_PROXY) docker compose
 
 all: setup dev build-mac ## Setup environment, start development, and build the macOS app (default)
 
-setup: ## Build images, start services, prepare the database, and install local deps
+setup: ## Build images, start services, prepare the database, install local deps, and install git hooks
 	$(COMPOSE) build
 	$(COMPOSE) up -d
 	@echo "Waiting for services to be ready..."
@@ -23,6 +23,7 @@ setup: ## Build images, start services, prepare the database, and install local 
 	$(COMPOSE) exec backend bundle exec rails db:prepare
 	$(COMPOSE) exec backend bundle exec rails db:seed
 	cd frontend && npm install
+	$(MAKE) hooks
 	@echo "✓ Setup complete"
 
 dev: ## Rebuild all services, start detached, and open browser
@@ -157,11 +158,36 @@ typecheck: ## Run TypeScript type-checker
 
 # ── Quality ───────────────────────────────────────────────────────────────────
 
-test: ## Run the backend test suite
+test: test-backend test-frontend ## Run the full test suite (backend + frontend)
+
+test-backend: ## Run the full backend test suite
 	$(COMPOSE) exec backend bundle exec rails test
+
+# Runs inside the frontend container, not on the host: the frontend
+# container's node_modules is a separate named volume from the host's (see
+# docker-compose.yml), and the host Node version isn't pinned to what Jest
+# needs, so `npm install` here keeps the container's copy in sync with
+# package.json before testing against it.
+test-frontend: ## Run the frontend test suite
+	$(COMPOSE) up -d frontend
+	$(COMPOSE) exec -T frontend npm install
+	$(COMPOSE) exec -T frontend npm test -- --silent
+
+test-fast: ## Run the short suite used by the pre-commit hook (models/controllers + frontend unit tests only)
+	$(COMPOSE) up -d backend frontend
+	$(COMPOSE) exec -T backend bundle exec rails test test/models test/controllers
+	$(COMPOSE) exec -T frontend npm install
+	$(COMPOSE) exec -T frontend npm test -- --silent
 
 lint-backend: ## Lint Ruby code with RuboCop
 	$(COMPOSE) exec backend bundle exec rubocop --parallel || true
+
+# ── Git hooks ─────────────────────────────────────────────────────────────────
+
+hooks: ## Install the git pre-commit hook (runs `test-fast` before every commit)
+	@cp scripts/git-hooks/pre-commit .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "✓ Installed pre-commit hook"
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 

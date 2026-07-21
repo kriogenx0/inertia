@@ -7,6 +7,13 @@
 # `postinstall` since node_modules is reset on every `npm install`.
 set -e
 
+# Only macOS ships PlistBuddy, and only a macOS-downloaded Electron dist is
+# actually branded via Info.plist — Electron's Linux dist (e.g. installed
+# inside the Docker frontend image/container) also happens to contain an
+# Electron.app subfolder, so checking for that dir alone isn't enough.
+[ "$(uname -s)" = "Darwin" ] || exit 0
+command -v /usr/libexec/PlistBuddy >/dev/null 2>&1 || exit 0
+
 ELECTRON_APP="$(dirname "$0")/../node_modules/electron/dist/Electron.app"
 [ -d "$ELECTRON_APP" ] || exit 0
 

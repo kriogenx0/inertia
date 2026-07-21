@@ -17,7 +17,9 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres/inertia_development
+      DATABASE_HOST: postgres
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: password
       REDIS_URL: redis://redis:6379
       RAILS_ENV: development
       JWT_SECRET_KEY: dev_secret_change_in_production
