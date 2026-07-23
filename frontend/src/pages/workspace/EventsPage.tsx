@@ -520,6 +520,10 @@ export default function EventsPage() {
     setSidebar({ mode: 'event', event })
   }
 
+  useEffect(() => {
+    if (searchParams.get('new') === '1') openNew()
+  }, [searchParams])
+
   // Keep sidebar event data fresh when events refetch
   if (sidebar?.mode === 'event') {
     const fresh = events.find((e) => e.id === sidebar.event.id)

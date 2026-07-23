@@ -34,15 +34,19 @@ export default function Sidebar() {
 
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
 
-  // Cmd+N → new document, Cmd+Option+N → new task
+  // Cmd+N → new document, Cmd+T → new task, Cmd+E → new event
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key === 'n') {
-        e.preventDefault()
-        navigate('/tasks?view=backlog&new=1')
-      } else if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+      if (!(e.metaKey || e.ctrlKey)) return
+      if (e.key === 'n') {
         e.preventDefault()
         createNewDocumentRef.current()
+      } else if (e.key === 't') {
+        e.preventDefault()
+        navigate('/tasks?view=backlog&new=1')
+      } else if (e.key === 'e') {
+        e.preventDefault()
+        navigate('/events?new=1')
       }
     }
     window.addEventListener('keydown', onKey)
