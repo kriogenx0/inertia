@@ -8,7 +8,7 @@ module Api
         tasks = tasks.where(document_id: params[:document_id]) if params[:document_id]
         tasks = tasks.where(status: params[:status]) if params[:status]
         tasks = tasks.joins(:document).where(documents: { folder_id: params[:folder_id] }) if params[:folder_id]
-        tasks = tasks.where("tasks.title ILIKE ?", "%#{params[:q]}%") if params[:q]
+        tasks = tasks.where("tasks.title LIKE ?", "%#{params[:q]}%") if params[:q]
         render json: TaskBlueprint.render(tasks, view: :with_document)
       end
 

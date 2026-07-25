@@ -5,10 +5,9 @@ class AddWorkspaceIdToTasks < ActiveRecord::Migration[7.2]
     # Backfill from existing document → folder → workspace chain
     execute <<~SQL
       UPDATE tasks
-      SET workspace_id = folders.workspace_id
-      FROM documents
+      JOIN documents ON documents.id = tasks.document_id
       JOIN folders ON folders.id = documents.folder_id
-      WHERE documents.id = tasks.document_id
+      SET tasks.workspace_id = folders.workspace_id
     SQL
 
     change_column_null :tasks, :workspace_id, false

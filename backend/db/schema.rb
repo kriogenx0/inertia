@@ -11,12 +11,9 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
-  # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
-
-  create_table "documents", force: :cascade do |t|
+  create_table "documents", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
-    t.jsonb "content", default: {}
+    t.json "content"
     t.integer "doc_type", default: 0, null: false
     t.bigint "folder_id", null: false
     t.bigint "created_by_id", null: false
@@ -29,7 +26,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["folder_id"], name: "index_documents_on_folder_id"
   end
 
-  create_table "event_tasks", force: :cascade do |t|
+  create_table "event_tasks", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "event_id", null: false
     t.bigint "task_id", null: false
     t.datetime "created_at", null: false
@@ -39,7 +36,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["task_id"], name: "index_event_tasks_on_task_id"
   end
 
-  create_table "events", force: :cascade do |t|
+  create_table "events", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
     t.text "description"
     t.date "date", null: false
@@ -53,7 +50,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["workspace_id"], name: "index_events_on_workspace_id"
   end
 
-  create_table "folders", force: :cascade do |t|
+  create_table "folders", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.bigint "workspace_id", null: false
     t.bigint "parent_id"
@@ -65,13 +62,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["workspace_id"], name: "index_folders_on_workspace_id"
   end
 
-  create_table "jwt_denylists", force: :cascade do |t|
+  create_table "jwt_denylists", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "jti", null: false
     t.datetime "exp", null: false
     t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
   end
 
-  create_table "shares", force: :cascade do |t|
+  create_table "shares", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "token", null: false
     t.integer "permission", default: 0, null: false
     t.string "shareable_type", null: false
@@ -84,7 +81,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["token"], name: "index_shares_on_token", unique: true
   end
 
-  create_table "tasks", force: :cascade do |t|
+  create_table "tasks", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
     t.text "description"
     t.integer "status", default: 4, null: false
@@ -101,7 +98,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["workspace_id"], name: "index_tasks_on_workspace_id"
   end
 
-  create_table "users", force: :cascade do |t|
+  create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -114,7 +111,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_06_13_222657) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
-  create_table "workspaces", force: :cascade do |t|
+  create_table "workspaces", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false

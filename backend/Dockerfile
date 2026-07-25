@@ -13,21 +13,29 @@ WORKDIR /rails
 
 # Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libvips postgresql-client && \
+    apt-get install --no-install-recommends -y curl libjemalloc2 libvips default-mysql-client && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Set production environment
+#
+# BUNDLE_WITHOUT must name both groups: the Gemfile puts debug/brakeman/
+# rubocop/faker in a combined `group :development, :test do` block, and
+# bundler only skips a gem if every group it's assigned to is excluded.
+# "development" alone left `debug` (-> irb -> rdoc -> psych) installed here,
+# which then failed to compile since this stage has no libyaml headers.
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \
     BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development"
+    BUNDLE_WITHOUT="development:test"
 
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
-# Install packages needed to build gems
+# Install packages needed to build gems. libyaml-dev is for psych, a
+# transitive dependency of railties itself (railties -> irb -> rdoc ->
+# psych) — needed unconditionally, not just for the dev/test groups.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev pkg-config && \
+    apt-get install --no-install-recommends -y build-essential git default-libmysqlclient-dev pkg-config libyaml-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install application gems

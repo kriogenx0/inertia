@@ -1,23 +1,17 @@
-# PostgreSQL. Versions 9.3 and up are supported.
+# MySQL. Versions 5.7 and up are supported.
 #
-# Install the pg driver:
-#   gem install pg
-# On macOS with Homebrew:
-#   gem install pg -- --with-pg-config=/usr/local/bin/pg_config
-# On Windows:
-#   gem install pg
-#       Choose the win32 build.
-#       Install PostgreSQL and put its /bin directory on your path.
+# Install the mysql2 driver:
+#   gem install mysql2
 #
 # Configure Using Gemfile
-# gem "pg"
+# gem "mysql2"
 #
 default: &default
-  adapter: postgresql
-  encoding: unicode
+  adapter: mysql2
+  encoding: utf8mb4
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: <%= ENV.fetch("DATABASE_HOST", "postgres") %>
-  username: <%= ENV.fetch("DATABASE_USERNAME", "postgres") %>
+  host: <%= ENV.fetch("DATABASE_HOST", "mysql") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "root") %>
   password: <%= ENV.fetch("DATABASE_PASSWORD", "password") %>
 
 development:

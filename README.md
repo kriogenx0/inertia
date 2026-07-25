@@ -12,7 +12,7 @@ docker compose up --build
 |---------|-----|
 | Frontend | http://localhost:5174 |
 | API | http://localhost:3000 |
-| PostgreSQL | localhost:5432 |
+| MySQL | localhost:3306 |
 | Redis | localhost:6379 |
 
 ## Project structure
