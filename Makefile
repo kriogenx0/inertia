@@ -7,6 +7,14 @@
         console routes shell-backend shell-frontend \
         typecheck test test-backend test-frontend test-fast lint-backend nuke hooks
 
+# GUI-launched processes on macOS (Dock, Spotlight, a task runner — anything
+# that isn't a shell that sourced your profile) get a minimal PATH from
+# launchd that excludes /usr/local/bin and /opt/homebrew/bin, which is where
+# Docker Desktop, Homebrew's docker CLI, and colima all put their binaries.
+# `make dev` failing with "docker: command not found" in that context, while
+# working fine from a normal terminal, is that — not a broken install.
+export PATH := /opt/homebrew/bin:/usr/local/bin:$(PATH)
+
 # Rewrite localhost proxy URLs to host.docker.internal so containers can reach them
 HOST_PROXY = $(shell echo "$${HTTP_PROXY:-}" | sed 's/localhost/host.docker.internal/g')
 COMPOSE     = HTTP_PROXY=$(HOST_PROXY) HTTPS_PROXY=$(HOST_PROXY) docker compose
