@@ -318,7 +318,7 @@ export default function TasksPage() {
               onClick={() => navigate('/tasks?view=kanban')}
               className={`px-3 py-1 rounded-md text-sm ${view === 'kanban' ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             >
-              Kanban
+              Workboard
             </button>
           </div>
           <div className="ml-auto flex items-center gap-2">

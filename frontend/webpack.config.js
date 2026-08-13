@@ -53,6 +53,12 @@ module.exports = (_env, argv) => {
       !isDev && new MiniCssExtractPlugin({ filename: '[name].[contenthash].css' }),
       isDev && new ReactRefreshWebpackPlugin(),
     ].filter(Boolean),
+    // VM-backed Docker (colima's virtiofs, and some Docker Desktop configs)
+    // doesn't reliably propagate host filesystem events into the Linux
+    // guest's inotify layer, so webpack's default watcher can silently
+    // never fire on source edits inside the container. Dev always runs in
+    // Docker here (see docker-compose.yml), so polling has no downside.
+    watchOptions: isDev ? { poll: 500, ignored: /node_modules/ } : undefined,
     devServer: {
       host: '0.0.0.0',
       port: 5174,
