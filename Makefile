@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-.PHONY: all setup dev dev-backend dev-frontend dev-mac build build-backend build-frontend build-mac clean clean-backend clean-frontend clean-mac help \
+.PHONY: all setup deps dev dev-backend dev-frontend dev-mac build build-backend build-frontend build-mac clean clean-backend clean-frontend clean-mac help \
         up up-d up-build down restart open \
         logs logs-backend logs-frontend ps \
         db-migrate db-rollback db-reset db-fake db-seed db-status \
@@ -23,7 +23,10 @@ COMPOSE     = HTTP_PROXY=$(HOST_PROXY) HTTPS_PROXY=$(HOST_PROXY) docker compose
 
 all: setup dev build-mac ## Setup environment, start development, and build the macOS app (default)
 
-setup: ## Build images, start services, prepare the database, install local deps, and install git hooks
+deps: ## Install/verify host dependencies: Homebrew, Docker (via colima if missing), Node
+	bash scripts/bootstrap-deps.sh
+
+setup: deps ## Install host dependencies (Homebrew, Docker, Node), then build images, start services, prepare the database, install local deps, and install git hooks
 	$(COMPOSE) build
 	$(COMPOSE) up -d
 	@echo "Waiting for services to be ready..."
