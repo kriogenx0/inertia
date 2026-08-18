@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
 import { useAuthStore } from '@/store/auth'
+import { useTabsStore } from '@/store/tabs'
 import { FolderItem } from './FolderItem'
 import api from '@/lib/api'
 import logo from '@/assets/logo.png'
@@ -35,7 +36,7 @@ export default function Sidebar() {
 
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
 
-  // Cmd+N → new document, Cmd+T → new task, Cmd+E → new event
+  // Cmd+N → new document, Cmd+T → new task, Cmd+E → new event, Cmd+W → close tab
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (!(e.metaKey || e.ctrlKey)) return
@@ -48,6 +49,16 @@ export default function Sidebar() {
       } else if (e.key === 'e') {
         e.preventDefault()
         navigate('/events?new=1')
+      } else if (e.key === 'w') {
+        // Always prevented, even with no tab open: Electron's default macOS
+        // menu binds Cmd+W to closing the whole window (see main.cjs), and
+        // that's a native accelerator a renderer preventDefault() can't
+        // reach — this only matters for the in-page fallback/web build.
+        e.preventDefault()
+        const { activeId, closeTab } = useTabsStore.getState()
+        if (!activeId) return
+        const next = closeTab(activeId)
+        navigate(next ? next.path : '/')
       }
     }
     window.addEventListener('keydown', onKey)
