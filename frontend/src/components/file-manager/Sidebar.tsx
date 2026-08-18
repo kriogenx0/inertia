@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type CSSProperties } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
@@ -111,8 +111,16 @@ export default function Sidebar() {
 
   return (
     <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
-      {/* Header */}
-      <div className="px-3 pt-8 pb-3 border-b flex items-center gap-2">
+      {/* Header — purely decorative (no buttons/links in here), so the
+          whole thing can be a drag region. Much more generous than the
+          80x28 traffic-light-sized strip in main.tsx, which only exists as
+          a fallback for pages without a sidebar (login/signup); this is
+          what actually covers "next to the traffic lights" on every page
+          that has one. */}
+      <div
+        className="px-3 pt-8 pb-3 border-b flex items-center gap-2"
+        style={{ WebkitAppRegion: 'drag' } as CSSProperties}
+      >
         <img src={logo} alt="" className="w-6 h-6 rounded-md shrink-0" />
         <div className="min-w-0">
           <p className="font-semibold text-sm">Inertia</p>

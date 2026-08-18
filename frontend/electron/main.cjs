@@ -1,6 +1,15 @@
 const { app, BrowserWindow, Menu } = require('electron')
 const path = require('path')
 
+// app.getName()/app.name (used below for the menu bar's App menu label,
+// and elsewhere by Electron internally) reads package.json's lowercase
+// "name" field ("inertia") unless overridden — that's a different layer
+// from the CFBundleName/CFBundleDisplayName Info.plist patch in
+// scripts/brand-electron-dev.sh, which only covers Finder/Dock/Cmd+Tab
+// naming, not anything Electron itself reads at the JS level. Must be set
+// before anything (the menu, in particular) reads app.name.
+app.setName('Inertia')
+
 // Electron's built-in default macOS menu (used automatically whenever
 // Menu.setApplicationMenu is never called) binds Cmd+W to a native
 // "Close Window" accelerator via the Window menu's `role: 'close'` item.
