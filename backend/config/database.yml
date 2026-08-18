@@ -1,10 +1,18 @@
+# MySQL. Versions 5.7 and up are supported.
+#
+# Install the mysql2 driver:
+#   gem install mysql2
+#
+# Configure Using Gemfile
+# gem "mysql2"
+#
 default: &default
-  adapter: postgresql
-  encoding: unicode
+  adapter: mysql2
+  encoding: utf8mb4
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
-  username: <%= ENV.fetch("DATABASE_USERNAME", "postgres") %>
-  password: <%= ENV.fetch("DATABASE_PASSWORD", "postgres") %>
+  host: <%= ENV.fetch("DATABASE_HOST", "mysql") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "root") %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", "password") %>
 
 development:
   <<: *default
@@ -14,6 +22,11 @@ test:
   <<: *default
   database: inertia_test
 
+# Production gets a single DATABASE_URL (e.g. from the hosting platform)
+# instead of discrete host/user/password. It's kept separate from
+# development/test on purpose: a url's embedded database name silently
+# overrides the `database:` key above, and it must never be allowed to make
+# test/development point at the same physical database.
 production:
   <<: *default
   database: inertia_production

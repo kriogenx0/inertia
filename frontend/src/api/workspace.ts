@@ -1,0 +1,88 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import api from '@/lib/api'
+import type { Workspace, Folder, Document } from '@/types'
+
+// ── Workspace ─────────────────────────────────────────────────────────────────
+
+export function useWorkspace() {
+  return useQuery<Workspace>({
+    queryKey: ['workspace'],
+    queryFn: () => api.get('/api/v1/workspace').then((r) => r.data),
+  })
+}
+
+// ── Folders ───────────────────────────────────────────────────────────────────
+
+export function useCreateFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { name: string; parent_id?: number }) =>
+      api.post('/api/v1/folders', { folder: data }).then((r) => r.data as Folder),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+export function useUpdateFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; name?: string; pinned?: boolean }) =>
+      api.patch(`/api/v1/folders/${id}`, { folder: data }).then((r) => r.data as Folder),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+export function usePinFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, pinned }: { id: number; pinned: boolean }) =>
+      api.patch(`/api/v1/folders/${id}`, { folder: { pinned } }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+export function usePinDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, pinned }: { id: number; pinned: boolean }) =>
+      api.patch(`/api/v1/documents/${id}`, { document: { pinned } }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+export function useMoveDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, folderId }: { id: number; folderId: number }) =>
+      api.patch(`/api/v1/documents/${id}`, { document: { folder_id: folderId } }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+export function useDeleteFolder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/api/v1/folders/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+
+export function useCreateDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ folderId, ...data }: { folderId: number; title: string; doc_type?: string }) =>
+      api
+        .post(`/api/v1/folders/${folderId}/documents`, { document: data })
+        .then((r) => r.data as Document),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}
+
+export function useDeleteDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/api/v1/documents/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+  })
+}

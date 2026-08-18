@@ -1,43 +1,45 @@
 source "https://rubygems.org"
 
-ruby "3.2.4"
-
-gem "rails", "~> 7.1.6"
-
-# The original asset pipeline for Rails
-gem "sprockets-rails"
-
-# Use postgresql as the database for Active Record
-gem "pg", "~> 1.1"
-
-# Use the Puma web server
+gem "rails", "~> 7.2.2", ">= 7.2.2.1"
+gem "mysql2", "~> 0.5"
 gem "puma", ">= 5.0"
-
-# Use JavaScript with ESM import maps
-gem "importmap-rails"
-
-# Hotwire's SPA-like page accelerator
-gem "turbo-rails"
-
-# Hotwire's modest JavaScript framework
-gem "stimulus-rails"
-
-# Use Dart SASS
-gem "dartsass-rails"
-
-# Build JSON APIs with ease
-gem "jbuilder"
-
-# Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
+gem "tzinfo-data", platforms: %i[ windows jruby ]
+
+# Auth
+gem "devise"
+gem "devise-jwt"
+
+# Authorization
+gem "pundit"
+
+# CORS
+gem "rack-cors"
+
+# Pagination
+gem "kaminari"
+
+# File uploads
+gem "image_processing", "~> 1.2"
+
+# JSON serialization
+gem "blueprinter"
+
+# Redis
+gem "redis", ">= 4.0.1"
 
 group :development, :test do
-  gem "debug", platforms: %i[ mri windows ]
+  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
+  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
-  # Rails 7.1's test runner doesn't yet support minitest 6's changed API.
-  gem "minitest", "~> 5.0"
+  # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
+  gem "brakeman", require: false
+
+  # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
+  gem "rubocop-rails-omakase", require: false
+
+  # Generate random test/seed data
+  gem "faker"
 end
 
-group :development do
-  gem "web-console"
-end
+

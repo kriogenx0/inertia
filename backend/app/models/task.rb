@@ -1,3 +1,12 @@
-class Task < ActiveRecord::Base
-  belongs_to :user, optional: true
+class Task < ApplicationRecord
+  belongs_to :workspace
+  belongs_to :document, optional: true
+  belongs_to :assignee, class_name: "User", optional: true
+
+  enum :status, { todo: 0, in_progress: 1, in_review: 2, done: 3, backlog: 4 }
+
+  validates :title, presence: true
+  validates :status, presence: true
+
+  default_scope { order(:position) }
 end
