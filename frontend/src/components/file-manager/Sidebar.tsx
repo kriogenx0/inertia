@@ -3,14 +3,21 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
   Table as TableIcon, Pin, Folder, Loader2, CalendarDays, ChevronRight,
-  ListTodo, Kanban, List, Calendar,
+  ListTodo, Kanban, List, Calendar, Plus,
 } from 'lucide-react'
 import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
+import { useCreateTask } from '@/api/tasks'
+import { useCreateEvent } from '@/api/events'
 import { useAuthStore } from '@/store/auth'
 import { useTabsStore } from '@/store/tabs'
 import { FolderItem } from './FolderItem'
 import api from '@/lib/api'
 import logo from '@/assets/logo.png'
+
+function todayISO() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 export default function Sidebar() {
   const navigate = useNavigate()
@@ -21,22 +28,51 @@ export default function Sidebar() {
   const pinDocument = usePinDocument()
   const pinFolder = usePinFolder()
   const { user, logout } = useAuthStore()
+  const createTask = useCreateTask()
+  const createEvent = useCreateEvent()
   const [tasksOpen, setTasksOpen] = useState(true)
   const [eventsOpen, setEventsOpen] = useState(true)
   const [addingFolder, setAddingFolder] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [quickAddType, setQuickAddType] = useState<'task' | 'event'>('task')
+  const [quickAddTitle, setQuickAddTitle] = useState('')
+  const [quickAddDate, setQuickAddDate] = useState('')
   const creatingRef = useRef(false)
   const folderInputRef = useRef<HTMLInputElement>(null)
+  const quickAddInputRef = useRef<HTMLInputElement>(null)
   const createNewDocumentRef = useRef(createNewDocument)
   createNewDocumentRef.current = createNewDocument
+  const openQuickAddRef = useRef(openQuickAdd)
+  openQuickAddRef.current = openQuickAdd
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
     : '?'
 
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
+  useEffect(() => { if (quickAddOpen) quickAddInputRef.current?.focus() }, [quickAddOpen])
 
-  // Cmd+N → new document, Cmd+T → new task, Cmd+E → new event, Cmd+W → close tab
+  function openQuickAdd() {
+    setQuickAddType('task')
+    setQuickAddTitle('')
+    setQuickAddDate('')
+    setQuickAddOpen(true)
+  }
+
+  function submitQuickAdd() {
+    const title = quickAddTitle.trim()
+    if (!title) return
+    if (quickAddType === 'task') {
+      createTask.mutate({ title, dueDate: quickAddDate || undefined })
+    } else {
+      createEvent.mutate({ title, date: quickAddDate || todayISO(), event_type: 'deadline' })
+    }
+    setQuickAddOpen(false)
+  }
+
+  // Cmd+N → new document, Cmd+T → new task, Cmd+E → new event, Cmd+W → close
+  // tab, Cmd+K → quick-add a task or event without leaving the current page
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (!(e.metaKey || e.ctrlKey)) return
@@ -49,6 +85,9 @@ export default function Sidebar() {
       } else if (e.key === 'e') {
         e.preventDefault()
         navigate('/events?new=1')
+      } else if (e.key === 'k') {
+        e.preventDefault()
+        openQuickAddRef.current()
       } else if (e.key === 'w') {
         // Always prevented, even with no tab open: Electron's default macOS
         // menu binds Cmd+W to closing the whole window (see main.cjs), and
@@ -126,6 +165,18 @@ export default function Sidebar() {
           <p className="font-semibold text-sm">Inertia</p>
           <p className="text-xs text-muted-foreground truncate">{workspace?.name ?? 'My Workspace'}</p>
         </div>
+      </div>
+
+      {/* Quick add — creates a task or event without leaving the current page */}
+      <div className="px-2 pt-2">
+        <button
+          onClick={openQuickAdd}
+          className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md border border-dashed text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <Plus className="w-3.5 h-3.5 shrink-0" />
+          Quick add
+          <span className="ml-auto text-xs opacity-60">⌘K</span>
+        </button>
       </div>
 
       {/* Nav */}
@@ -347,6 +398,68 @@ export default function Sidebar() {
                 className="w-full px-4 py-2 rounded-md text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 border border-red-200 dark:border-red-900"
               >
                 Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick add modal */}
+      {quickAddOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setQuickAddOpen(false)}>
+          <div className="bg-card border rounded-xl shadow-xl w-96 p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex gap-1 p-0.5 bg-muted rounded-lg">
+              <button
+                onClick={() => setQuickAddType('task')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm ${quickAddType === 'task' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                Task
+              </button>
+              <button
+                onClick={() => setQuickAddType('event')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm ${quickAddType === 'event' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                Event
+              </button>
+            </div>
+
+            <input
+              ref={quickAddInputRef}
+              value={quickAddTitle}
+              onChange={(e) => setQuickAddTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full text-sm px-3 py-2 rounded-lg border border-input bg-background outline-none focus:ring-1 focus:ring-primary"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitQuickAdd()
+                if (e.key === 'Escape') setQuickAddOpen(false)
+              }}
+            />
+
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
+              {quickAddType === 'task' ? 'Due date' : 'Date'}
+              <input
+                type="date"
+                value={quickAddDate}
+                onChange={(e) => setQuickAddDate(e.target.value)}
+                className="flex-1 text-sm px-2 py-1 rounded-md border border-input bg-background outline-none focus:ring-1 focus:ring-primary"
+              />
+            </label>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setQuickAddOpen(false)}
+                className="px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-accent"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitQuickAdd}
+                disabled={!quickAddTitle.trim() || createTask.isPending || createEvent.isPending}
+                className="px-3 py-1.5 rounded-md text-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                Add {quickAddType === 'task' ? 'task' : 'event'}
               </button>
             </div>
           </div>
