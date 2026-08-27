@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, type CSSProperties } from 'react'
+import { useState, useRef, useEffect, type CSSProperties, type ComponentType } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
-  Table as TableIcon, Pin, Folder, Loader2, CalendarDays, ChevronRight,
-  ListTodo, Kanban, List, Calendar, Plus, Target,
+  Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
+  Plus, Target,
 } from 'lucide-react'
 import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
 import { useCreateTask } from '@/api/tasks'
@@ -20,6 +20,28 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// Backlog/Workboard and List/Month toggles already live on each page's own
+// header (TasksPage, EventsPage) — the rail only needs to get you to a
+// section, not duplicate its sub-views too.
+function RailButton({ icon: Icon, label, active, onClick }: {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  active?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+        active ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
+  )
+}
+
 export default function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -32,8 +54,6 @@ export default function Sidebar() {
   const createTask = useCreateTask()
   const createEvent = useCreateEvent()
   const { data: epics = [] } = useEpics()
-  const [tasksOpen, setTasksOpen] = useState(true)
-  const [eventsOpen, setEventsOpen] = useState(true)
   const [addingFolder, setAddingFolder] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
@@ -152,245 +172,173 @@ export default function Sidebar() {
   const pinnedFolders = (workspace?.folders ?? []).filter((f) => f.pinned)
   const hasPinned = pinnedDocs.length > 0 || pinnedFolders.length > 0
 
+  const isDocumentsSection = location.pathname === '/' || location.pathname.startsWith('/documents')
+
   return (
-    <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
-      {/* Header — purely decorative (no buttons/links in here), so the
-          whole thing can be a drag region. Much more generous than the
-          80x28 traffic-light-sized strip in main.tsx, which only exists as
-          a fallback for pages without a sidebar (login/signup); this is
-          what actually covers "next to the traffic lights" on every page
-          that has one. */}
-      <div
-        className="px-3 pt-8 pb-3 border-b flex items-center gap-2"
-        style={{ WebkitAppRegion: 'drag' } as CSSProperties}
-      >
-        <img src={logo} alt="" className="w-6 h-6 rounded-md shrink-0" />
-        <div className="min-w-0">
-          <p className="font-semibold text-sm">Inertia</p>
-          <p className="text-xs text-muted-foreground truncate">{workspace?.name ?? 'My Workspace'}</p>
+    <div className="flex h-screen shrink-0">
+      {/* Icon rail — top-level section nav. Traffic lights float over its
+          top-left corner, so the top strip and the flexible middle spacer
+          are both drag regions (nothing interactive sits in either). */}
+      <nav className="w-14 border-r bg-muted/30 flex flex-col items-center h-screen shrink-0">
+        <div className="h-8 w-full shrink-0" style={{ WebkitAppRegion: 'drag' } as CSSProperties} />
+        <div className="flex flex-col items-center gap-1 py-2">
+          <RailButton icon={FileText} label="Documents" active={isDocumentsSection} onClick={() => navigate('/documents')} />
+          <RailButton icon={CheckSquare} label="Tasks" active={location.pathname === '/tasks'} onClick={() => navigate('/tasks?view=backlog')} />
+          <RailButton icon={CalendarDays} label="Events" active={location.pathname === '/events'} onClick={() => navigate('/events?view=list')} />
+          <RailButton icon={Target} label="Epics" active={location.pathname === '/epics'} onClick={() => navigate('/epics')} />
         </div>
-      </div>
-
-      {/* Quick add — creates a task or event without leaving the current page */}
-      <div className="px-2 pt-2">
-        <button
-          onClick={openQuickAdd}
-          className="flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md border border-dashed text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <Plus className="w-3.5 h-3.5 shrink-0" />
-          Quick add
-          <span className="ml-auto text-xs opacity-60">⌘K</span>
-        </button>
-      </div>
-
-      {/* Nav */}
-      <div className="px-2 py-2 border-b flex flex-col gap-0.5">
-        {/* Tasks — a section label (collapsible, not a nav link itself); Backlog/Kanban below are the actual links */}
-        <div>
+        <div className="flex-1 w-full" style={{ WebkitAppRegion: 'drag' } as CSSProperties} />
+        <div className="flex flex-col items-center gap-1 py-2">
+          <RailButton icon={Plus} label="Quick add (⌘K)" onClick={openQuickAdd} />
           <button
-            onClick={() => setTasksOpen((o) => !o)}
-            className={`flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md hover:bg-accent ${location.pathname === '/tasks' ? 'bg-accent' : ''}`}
+            onClick={() => setAccountOpen(true)}
+            title={user?.name ?? 'Account'}
+            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0 mb-2"
           >
-            <ChevronRight className={`w-3 h-3 text-muted-foreground shrink-0 transition-transform ${tasksOpen ? 'rotate-90' : ''}`} />
-            <CheckSquare className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tasks</span>
-          </button>
-          {tasksOpen && (
-            <div className="pl-9 flex flex-col gap-0.5">
-              <button
-                onClick={() => navigate('/tasks?view=backlog')}
-                className={`flex items-center gap-1.5 w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.pathname === '/tasks' && !location.search.includes('view=kanban') ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                <ListTodo className="w-3.5 h-3.5 shrink-0" />
-                Backlog
-              </button>
-              <button
-                onClick={() => navigate('/tasks?view=kanban')}
-                className={`flex items-center gap-1.5 w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=kanban') ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                <Kanban className="w-3.5 h-3.5 shrink-0" />
-                Workboard
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Events — same section-label treatment as Tasks */}
-        <div>
-          <button
-            onClick={() => setEventsOpen((o) => !o)}
-            className={`flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md hover:bg-accent ${location.pathname === '/events' ? 'bg-accent' : ''}`}
-          >
-            <ChevronRight className={`w-3 h-3 text-muted-foreground shrink-0 transition-transform ${eventsOpen ? 'rotate-90' : ''}`} />
-            <CalendarDays className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Events</span>
-          </button>
-          {eventsOpen && (
-            <div className="pl-9 flex flex-col gap-0.5">
-              <button
-                onClick={() => navigate('/events?view=list')}
-                className={`flex items-center gap-1.5 w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.pathname === '/events' && !location.search.includes('view=month') ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                <List className="w-3.5 h-3.5 shrink-0" />
-                List
-              </button>
-              <button
-                onClick={() => navigate('/events?view=month')}
-                className={`flex items-center gap-1.5 w-full text-left px-2 py-1 rounded-md text-xs hover:bg-accent hover:text-foreground ${location.search.includes('view=month') ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                <Calendar className="w-3.5 h-3.5 shrink-0" />
-                Month
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Epics — a single view, so no chevron/sub-items like Tasks/Events */}
-        <button
-          onClick={() => navigate('/epics')}
-          className={`flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md hover:bg-accent ${location.pathname === '/epics' ? 'bg-accent' : ''}`}
-        >
-          <Target className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-[18px]" />
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Epics</span>
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-3">
-        {/* Pinned section */}
-        {hasPinned && (
-          <div>
-            <div className="flex items-center gap-1.5 px-3 mb-1">
-              <Pin className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pinned</span>
-            </div>
-            {pinnedFolders.map((folder) => {
-              const firstDoc = folder.documents?.[0]
-              return (
-                <button
-                  key={folder.id}
-                  onClick={() => firstDoc && navigate(`/documents/${firstDoc.id}`)}
-                  className="flex items-center gap-1.5 w-full px-3 py-1 rounded-md text-sm hover:bg-accent text-left group"
-                >
-                  <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className="flex-1 truncate">{folder.name}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); pinFolder.mutate({ id: folder.id, pinned: false }) }}
-                    className="hidden group-hover:flex text-muted-foreground hover:text-foreground"
-                    title="Unpin"
-                  >
-                    <Pin className="w-3 h-3" />
-                  </button>
-                </button>
-              )
-            })}
-            {pinnedDocs.map((doc) => {
-              const active = location.pathname === `/documents/${doc.id}`
-              return (
-                <button
-                  key={doc.id}
-                  onClick={() => navigate(`/documents/${doc.id}`)}
-                  className={`flex items-center gap-1.5 w-full px-3 py-1 rounded-md text-sm hover:bg-accent text-left group ${active ? 'bg-accent' : ''}`}
-                >
-                  {doc.doc_type === 'spreadsheet'
-                    ? <TableIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    : <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  }
-                  <span className="flex-1 truncate">{doc.title}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); pinDocument.mutate({ id: doc.id, pinned: false }) }}
-                    className="hidden group-hover:flex text-muted-foreground hover:text-foreground"
-                    title="Unpin"
-                  >
-                    <Pin className="w-3 h-3" />
-                  </button>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Documents section (unified tree) */}
-        <div>
-          <div className="flex items-center justify-between px-3 mb-1">
-            <button
-              onClick={() => navigate('/documents')}
-              className="text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
-            >
-              Documents
-            </button>
-            <div className="flex items-center gap-0.5">
-              <button
-                title="New document (⌘N)"
-                onClick={() => createNewDocument()}
-                className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-              >
-                <FilePlus className="w-3.5 h-3.5" />
-              </button>
-              <button
-                title="New spreadsheet"
-                onClick={() => createNewSpreadsheet()}
-                className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-              >
-                <TableIcon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                title="New folder"
-                onClick={() => setAddingFolder(true)}
-                className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-              >
-                <FolderPlus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {addingFolder && (
-            <div className="px-2 pb-1">
-              <input
-                ref={folderInputRef}
-                placeholder="Folder name"
-                className="w-full text-sm px-2 py-0.5 rounded border border-input bg-card outline-none focus:ring-1 focus:ring-primary"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    createFolder.mutate({ name: e.currentTarget.value.trim() })
-                    setAddingFolder(false)
-                  }
-                  if (e.key === 'Escape') setAddingFolder(false)
-                }}
-                onBlur={() => setAddingFolder(false)}
-              />
-            </div>
-          )}
-
-          {isLoading && (
-            <div className="flex justify-center py-4">
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {!isLoading && workspace?.folders?.length === 0 && !addingFolder && (
-            <div className="flex flex-col items-center py-4 gap-2 text-muted-foreground">
-              <FilePlus className="w-8 h-8 opacity-30" />
-            </div>
-          )}
-
-          {workspace?.folders?.map((folder) => (
-            <FolderItem key={folder.id} folder={folder} />
-          ))}
-        </div>
-      </div>
-
-      {/* Footer — user avatar */}
-      <div className="border-t px-2 py-2">
-        <button
-          onClick={() => setAccountOpen(true)}
-          className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm hover:bg-accent"
-        >
-          <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
             {initials}
+          </button>
+        </div>
+      </nav>
+
+      {/* Detail panel — Pinned + the Documents tree, the content that's
+          actually unique to it now that Tasks/Events/Epics moved to the
+          rail. */}
+      <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
+        <div
+          className="px-3 pt-8 pb-3 border-b flex items-center gap-2"
+          style={{ WebkitAppRegion: 'drag' } as CSSProperties}
+        >
+          <img src={logo} alt="" className="w-6 h-6 rounded-md shrink-0" />
+          <div className="min-w-0">
+            <p className="font-semibold text-sm">Inertia</p>
+            <p className="text-xs text-muted-foreground truncate">{workspace?.name ?? 'My Workspace'}</p>
           </div>
-          <span className="flex-1 text-left truncate text-foreground">{user?.name ?? 'Account'}</span>
-        </button>
-      </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-3">
+          {/* Pinned section */}
+          {hasPinned && (
+            <div>
+              <div className="flex items-center gap-1.5 px-3 mb-1">
+                <Pin className="w-3 h-3 text-muted-foreground" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pinned</span>
+              </div>
+              {pinnedFolders.map((folder) => {
+                const firstDoc = folder.documents?.[0]
+                return (
+                  <button
+                    key={folder.id}
+                    onClick={() => firstDoc && navigate(`/documents/${firstDoc.id}`)}
+                    className="flex items-center gap-1.5 w-full px-3 py-1 rounded-md text-sm hover:bg-accent text-left group"
+                  >
+                    <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <span className="flex-1 truncate">{folder.name}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); pinFolder.mutate({ id: folder.id, pinned: false }) }}
+                      className="hidden group-hover:flex text-muted-foreground hover:text-foreground"
+                      title="Unpin"
+                    >
+                      <Pin className="w-3 h-3" />
+                    </button>
+                  </button>
+                )
+              })}
+              {pinnedDocs.map((doc) => {
+                const active = location.pathname === `/documents/${doc.id}`
+                return (
+                  <button
+                    key={doc.id}
+                    onClick={() => navigate(`/documents/${doc.id}`)}
+                    className={`flex items-center gap-1.5 w-full px-3 py-1 rounded-md text-sm hover:bg-accent text-left group ${active ? 'bg-accent' : ''}`}
+                  >
+                    {doc.doc_type === 'spreadsheet'
+                      ? <TableIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      : <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    }
+                    <span className="flex-1 truncate">{doc.title}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); pinDocument.mutate({ id: doc.id, pinned: false }) }}
+                      className="hidden group-hover:flex text-muted-foreground hover:text-foreground"
+                      title="Unpin"
+                    >
+                      <Pin className="w-3 h-3" />
+                    </button>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Documents section (unified tree) */}
+          <div>
+            <div className="flex items-center justify-between px-3 mb-1">
+              <button
+                onClick={() => navigate('/documents')}
+                className="text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground"
+              >
+                Documents
+              </button>
+              <div className="flex items-center gap-0.5">
+                <button
+                  title="New document (⌘N)"
+                  onClick={() => createNewDocument()}
+                  className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                >
+                  <FilePlus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  title="New spreadsheet"
+                  onClick={() => createNewSpreadsheet()}
+                  className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                >
+                  <TableIcon className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  title="New folder"
+                  onClick={() => setAddingFolder(true)}
+                  className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                >
+                  <FolderPlus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {addingFolder && (
+              <div className="px-2 pb-1">
+                <input
+                  ref={folderInputRef}
+                  placeholder="Folder name"
+                  className="w-full text-sm px-2 py-0.5 rounded border border-input bg-card outline-none focus:ring-1 focus:ring-primary"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                      createFolder.mutate({ name: e.currentTarget.value.trim() })
+                      setAddingFolder(false)
+                    }
+                    if (e.key === 'Escape') setAddingFolder(false)
+                  }}
+                  onBlur={() => setAddingFolder(false)}
+                />
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {!isLoading && workspace?.folders?.length === 0 && !addingFolder && (
+              <div className="flex flex-col items-center py-4 gap-2 text-muted-foreground">
+                <FilePlus className="w-8 h-8 opacity-30" />
+              </div>
+            )}
+
+            {workspace?.folders?.map((folder) => (
+              <FolderItem key={folder.id} folder={folder} />
+            ))}
+          </div>
+        </div>
+      </aside>
 
       {/* Account panel */}
       {accountOpen && (
@@ -494,6 +442,6 @@ export default function Sidebar() {
           </div>
         </div>
       )}
-    </aside>
+    </div>
   )
 }
