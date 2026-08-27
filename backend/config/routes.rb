@@ -23,6 +23,8 @@ Rails.application.routes.draw do
 
       resources :tasks, only: [:index, :create, :update, :destroy]
 
+      resources :epics, only: [:index, :create, :update, :destroy]
+
       resources :uploads, only: [:create]
 
       resources :events do

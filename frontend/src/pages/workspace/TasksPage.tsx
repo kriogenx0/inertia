@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, X, ArrowRight, Play, Loader2, Search, Filter } from 'lucide-react'
+import { Plus, X, ArrowRight, Play, Loader2, Search, Filter, Target } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -25,7 +25,8 @@ import { CSS } from '@dnd-kit/utilities'
 import WorkspaceLayout from '@/components/WorkspaceLayout'
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, type TaskFilters } from '@/api/tasks'
 import { useWorkspace } from '@/api/workspace'
-import type { Task } from '@/types'
+import { useEpics } from '@/api/epics'
+import type { Task, Epic } from '@/types'
 
 const KANBAN_STATUSES: { key: Task['status']; label: string; dot: string }[] = [
   { key: 'todo', label: 'To Do', dot: 'bg-muted-foreground' },
@@ -63,15 +64,22 @@ interface CardProps {
   onDelete?: () => void
   onNext: (() => void) | null
   onNavigate: () => void
+  epicTitle?: string
   overlay?: boolean
 }
 
-function TaskCard({ task, onNext, onNavigate, overlay }: Omit<CardProps, 'onDelete'>) {
+function TaskCard({ task, onNext, onNavigate, epicTitle, overlay }: Omit<CardProps, 'onDelete'>) {
   return (
     <div className={`bg-card border rounded-lg p-3 select-none ${overlay ? 'shadow-xl rotate-1 opacity-95' : ''}`}>
       <div className="flex items-start gap-2">
         <p className="text-sm leading-snug flex-1">{task.title}</p>
       </div>
+      {epicTitle && (
+        <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+          <Target className="w-3 h-3 shrink-0" />
+          <span className="truncate">{epicTitle}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mt-2">
         {task.document && (
           <button
@@ -137,23 +145,32 @@ function KanbanColumn({ status, label, dot, tasks, children }: {
 // ── AddTaskInput ──────────────────────────────────────────────────────────────
 
 interface AddTaskInputProps {
-  onAdd: (title: string, dueDate: string) => void
+  onAdd: (title: string, dueDate: string, epicId?: number) => void
   onCancel: () => void
+  epics: Epic[]
 }
 
-function AddTaskInput({ onAdd, onCancel }: AddTaskInputProps) {
+function AddTaskInput({ onAdd, onCancel, epics }: AddTaskInputProps) {
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [epicId, setEpicId] = useState('')
   const titleRef = useRef('')
-  const dateRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   function commit() {
-    if (titleRef.current.trim()) onAdd(titleRef.current.trim(), dueDate)
+    if (titleRef.current.trim()) onAdd(titleRef.current.trim(), dueDate, epicId ? Number(epicId) : undefined)
     else onCancel()
   }
 
+  // Only commit once focus leaves the whole row — otherwise tabbing from
+  // the title into the date (or the epic picker, when present) would fire
+  // this input's own onBlur and submit before the other fields are set.
+  function handleBlur(e: React.FocusEvent) {
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) commit()
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div ref={containerRef} className="flex items-center gap-2">
       <input
         autoFocus
         placeholder="Task title…"
@@ -164,16 +181,28 @@ function AddTaskInput({ onAdd, onCancel }: AddTaskInputProps) {
           if (e.key === 'Enter') commit()
           if (e.key === 'Escape') onCancel()
         }}
-        onBlur={(e) => { if (!dateRef.current?.contains(e.relatedTarget as Node)) commit() }}
+        onBlur={handleBlur}
       />
       <input
-        ref={dateRef}
         type="date"
         className="text-xs text-muted-foreground bg-transparent border-b border-input pb-1 outline-none cursor-pointer"
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
-        onBlur={commit}
+        onBlur={handleBlur}
       />
+      {epics.length > 0 && (
+        <select
+          value={epicId}
+          onChange={(e) => setEpicId(e.target.value)}
+          onBlur={handleBlur}
+          className="text-xs text-muted-foreground bg-transparent border-b border-input pb-1 outline-none cursor-pointer max-w-[110px]"
+        >
+          <option value="">No epic</option>
+          {epics.map((epic) => (
+            <option key={epic.id} value={epic.id}>{epic.title}</option>
+          ))}
+        </select>
+      )}
     </div>
   )
 }
@@ -185,14 +214,25 @@ export default function TasksPage() {
   const [searchParams] = useSearchParams()
   const view = searchParams.get('view') === 'kanban' ? 'kanban' : 'backlog'
 
-  const [filters, setFilters] = useState<TaskFilters>({})
+  const [filters, setFilters] = useState<TaskFilters>(() => {
+    const epicId = searchParams.get('epic_id')
+    return epicId ? { epic_id: Number(epicId) } : {}
+  })
   const [showFilters, setShowFilters] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   const { data: workspace } = useWorkspace()
+  const { data: epics = [] } = useEpics()
+  const epicById = new Map(epics.map((e) => [e.id, e]))
+
+  useEffect(() => {
+    const epicId = searchParams.get('epic_id')
+    if (epicId) setFilters((f) => ({ ...f, epic_id: Number(epicId) }))
+  }, [searchParams])
 
   const activeFilters: TaskFilters = {
     ...(filters.folder_id ? { folder_id: filters.folder_id } : {}),
     ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.epic_id ? { epic_id: filters.epic_id } : {}),
     ...(searchQ.trim() ? { q: searchQ.trim() } : {}),
   }
 
@@ -298,8 +338,8 @@ export default function TasksPage() {
     setLocalTasksState(tasks)
   }
 
-  function createTaskWith(title: string, status: Task['status'], dueDate: string) {
-    createTask.mutate({ title, status, dueDate })
+  function createTaskWith(title: string, status: Task['status'], dueDate: string, epicId?: number) {
+    createTask.mutate({ title, status, dueDate, epicId })
   }
 
   return (
@@ -333,11 +373,11 @@ export default function TasksPage() {
             </div>
             <button
               onClick={() => setShowFilters((o) => !o)}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-sm border ${showFilters || filters.folder_id || filters.status ? 'border-primary text-primary' : 'border-input text-muted-foreground hover:text-foreground'}`}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-sm border ${showFilters || filters.folder_id || filters.status || filters.epic_id ? 'border-primary text-primary' : 'border-input text-muted-foreground hover:text-foreground'}`}
             >
               <Filter className="w-3.5 h-3.5" />
               Filter
-              {(filters.folder_id || filters.status) && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+              {(filters.folder_id || filters.status || filters.epic_id) && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
             </button>
           </div>
         </div>
@@ -368,7 +408,18 @@ export default function TasksPage() {
               <option value="in_review">In Review</option>
               <option value="done">Done</option>
             </select>
-            {(filters.folder_id || filters.status) && (
+            <span className="text-xs text-muted-foreground font-medium">Epic</span>
+            <select
+              className="text-sm rounded border border-input bg-card px-2 py-1 outline-none"
+              value={filters.epic_id ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, epic_id: e.target.value ? Number(e.target.value) : undefined }))}
+            >
+              <option value="">All epics</option>
+              {epics.map((epic) => (
+                <option key={epic.id} value={epic.id}>{epic.title}</option>
+              ))}
+            </select>
+            {(filters.folder_id || filters.status || filters.epic_id) && (
               <button
                 onClick={() => setFilters({})}
                 className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
@@ -406,13 +457,15 @@ export default function TasksPage() {
                           task={task}
                           onNext={NEXT_STATUS[task.status] ? () => updateTask.mutate({ id: task.id, status: NEXT_STATUS[task.status]! }) : null}
                           onNavigate={() => navigate(`/documents/${task.document_id}`)}
+                          epicTitle={task.epic_id ? epicById.get(task.epic_id)?.title : undefined}
                         />
                       ))}
                       {addingTo === key ? (
                         <div className="bg-card border rounded-lg p-2">
                           <AddTaskInput
-                            onAdd={(title, dueDate) => { createTaskWith(title, key, dueDate); setAddingTo(null) }}
+                            onAdd={(title, dueDate, epicId) => { createTaskWith(title, key, dueDate, epicId); setAddingTo(null) }}
                             onCancel={() => setAddingTo(null)}
+                            epics={epics}
                           />
                         </div>
                       ) : (
@@ -463,8 +516,9 @@ export default function TasksPage() {
               {addingTo === 'backlog' && (
                 <div className="mb-2 px-1">
                   <AddTaskInput
-                    onAdd={(title, dueDate) => { createTaskWith(title, 'backlog', dueDate); setAddingTo(null) }}
+                    onAdd={(title, dueDate, epicId) => { createTaskWith(title, 'backlog', dueDate, epicId); setAddingTo(null) }}
                     onCancel={() => setAddingTo(null)}
+                    epics={epics}
                   />
                 </div>
               )}
@@ -473,6 +527,12 @@ export default function TasksPage() {
                 {tasks.filter((t) => t.status === 'backlog').map((task) => (
                   <div key={task.id} className="flex items-center gap-3 py-2 group">
                     <p className="text-sm flex-1">{task.title}</p>
+                    {task.epic_id && epicById.get(task.epic_id) && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[140px] shrink-0">
+                        <Target className="w-3 h-3 shrink-0" />
+                        {epicById.get(task.epic_id)!.title}
+                      </span>
+                    )}
                     {task.document && (
                       <button
                         onClick={() => navigate(`/documents/${task.document_id}`)}

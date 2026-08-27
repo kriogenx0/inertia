@@ -35,7 +35,17 @@ export interface Task {
   position: number
   document_id: number
   assignee_id: number | null
+  epic_id: number | null
   document?: Document
+}
+
+export interface Epic {
+  id: number
+  title: string
+  tasks_count: number
+  done_tasks_count: number
+  created_at: string
+  updated_at: string
 }
 
 export interface WorkspaceEvent {

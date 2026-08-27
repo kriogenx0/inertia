@@ -7,6 +7,7 @@ export interface TaskFilters {
   status?: string
   folder_id?: number
   document_id?: number
+  epic_id?: number
 }
 
 export function useTasks(filters: TaskFilters = {}) {
@@ -19,10 +20,10 @@ export function useTasks(filters: TaskFilters = {}) {
 export function useCreateTask() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { title: string; status?: Task['status']; dueDate?: string; documentId?: number }) => {
-      const { documentId, dueDate, ...rest } = data
+    mutationFn: (data: { title: string; status?: Task['status']; dueDate?: string; documentId?: number; epicId?: number }) => {
+      const { documentId, dueDate, epicId, ...rest } = data
       const url = documentId ? `/api/v1/documents/${documentId}/tasks` : '/api/v1/tasks'
-      return api.post(url, { task: { ...rest, due_date: dueDate } }).then((r) => r.data as Task)
+      return api.post(url, { task: { ...rest, due_date: dueDate, epic_id: epicId } }).then((r) => r.data as Task)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   })

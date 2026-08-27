@@ -3,11 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
   Table as TableIcon, Pin, Folder, Loader2, CalendarDays, ChevronRight,
-  ListTodo, Kanban, List, Calendar, Plus,
+  ListTodo, Kanban, List, Calendar, Plus, Target,
 } from 'lucide-react'
 import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
 import { useCreateTask } from '@/api/tasks'
 import { useCreateEvent } from '@/api/events'
+import { useEpics } from '@/api/epics'
 import { useAuthStore } from '@/store/auth'
 import { useTabsStore } from '@/store/tabs'
 import { FolderItem } from './FolderItem'
@@ -30,6 +31,7 @@ export default function Sidebar() {
   const { user, logout } = useAuthStore()
   const createTask = useCreateTask()
   const createEvent = useCreateEvent()
+  const { data: epics = [] } = useEpics()
   const [tasksOpen, setTasksOpen] = useState(true)
   const [eventsOpen, setEventsOpen] = useState(true)
   const [addingFolder, setAddingFolder] = useState(false)
@@ -38,6 +40,7 @@ export default function Sidebar() {
   const [quickAddType, setQuickAddType] = useState<'task' | 'event'>('task')
   const [quickAddTitle, setQuickAddTitle] = useState('')
   const [quickAddDate, setQuickAddDate] = useState('')
+  const [quickAddEpicId, setQuickAddEpicId] = useState('')
   const creatingRef = useRef(false)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const quickAddInputRef = useRef<HTMLInputElement>(null)
@@ -57,6 +60,7 @@ export default function Sidebar() {
     setQuickAddType('task')
     setQuickAddTitle('')
     setQuickAddDate('')
+    setQuickAddEpicId('')
     setQuickAddOpen(true)
   }
 
@@ -64,7 +68,7 @@ export default function Sidebar() {
     const title = quickAddTitle.trim()
     if (!title) return
     if (quickAddType === 'task') {
-      createTask.mutate({ title, dueDate: quickAddDate || undefined })
+      createTask.mutate({ title, dueDate: quickAddDate || undefined, epicId: quickAddEpicId ? Number(quickAddEpicId) : undefined })
     } else {
       createEvent.mutate({ title, date: quickAddDate || todayISO(), event_type: 'deadline' })
     }
@@ -240,6 +244,15 @@ export default function Sidebar() {
             </div>
           )}
         </div>
+
+        {/* Epics — a single view, so no chevron/sub-items like Tasks/Events */}
+        <button
+          onClick={() => navigate('/epics')}
+          className={`flex items-center gap-1.5 w-full px-2 py-1.5 rounded-md hover:bg-accent ${location.pathname === '/epics' ? 'bg-accent' : ''}`}
+        >
+          <Target className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-[18px]" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Epics</span>
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto py-2 flex flex-col gap-3">
@@ -446,6 +459,22 @@ export default function Sidebar() {
                 className="flex-1 text-sm px-2 py-1 rounded-md border border-input bg-background outline-none focus:ring-1 focus:ring-primary"
               />
             </label>
+
+            {quickAddType === 'task' && epics.length > 0 && (
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                Epic
+                <select
+                  value={quickAddEpicId}
+                  onChange={(e) => setQuickAddEpicId(e.target.value)}
+                  className="flex-1 text-sm px-2 py-1 rounded-md border border-input bg-background outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">No epic</option>
+                  {epics.map((epic) => (
+                    <option key={epic.id} value={epic.id}>{epic.title}</option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <div className="flex justify-end gap-2">
               <button

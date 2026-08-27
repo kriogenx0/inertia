@@ -7,6 +7,7 @@ import DocumentPage from '@/pages/workspace/DocumentPage'
 import DocumentsIndexPage from '@/pages/workspace/DocumentsIndexPage'
 import TasksPage from '@/pages/workspace/TasksPage'
 import EventsPage from '@/pages/workspace/EventsPage'
+import EpicsPage from '@/pages/workspace/EpicsPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -57,6 +58,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <EventsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/epics"
+        element={
+          <PrivateRoute>
+            <EpicsPage />
           </PrivateRoute>
         }
       />

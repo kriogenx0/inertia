@@ -7,6 +7,7 @@ module Api
         tasks = current_workspace.tasks.includes(:document)
         tasks = tasks.where(document_id: params[:document_id]) if params[:document_id]
         tasks = tasks.where(status: params[:status]) if params[:status]
+        tasks = tasks.where(epic_id: params[:epic_id]) if params[:epic_id]
         tasks = tasks.joins(:document).where(documents: { folder_id: params[:folder_id] }) if params[:folder_id]
         tasks = tasks.where("tasks.title LIKE ?", "%#{params[:q]}%") if params[:q]
         render json: TaskBlueprint.render(tasks, view: :with_document)
@@ -46,7 +47,7 @@ module Api
       end
 
       def task_params
-        params.require(:task).permit(:title, :description, :status, :due_date, :position, :assignee_id)
+        params.require(:task).permit(:title, :description, :status, :due_date, :position, :assignee_id, :epic_id)
       end
     end
   end

@@ -4,6 +4,7 @@ class Workspace < ApplicationRecord
   has_many :documents, through: :folders
   has_many :tasks, dependent: :destroy
   has_many :events, dependent: :destroy
+  has_many :epics, dependent: :destroy
 
   validates :name, presence: true
 end
