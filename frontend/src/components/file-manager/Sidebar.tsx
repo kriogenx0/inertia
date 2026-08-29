@@ -3,9 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
   Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
-  Plus, Target,
+  Plus, Target, Archive, ArchiveRestore,
 } from 'lucide-react'
-import { useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder } from '@/api/workspace'
+import {
+  useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder,
+  useArchivedFolders, useUpdateFolder,
+} from '@/api/workspace'
 import { useCreateTask } from '@/api/tasks'
 import { useCreateEvent } from '@/api/events'
 import { useEpics } from '@/api/epics'
@@ -50,11 +53,14 @@ export default function Sidebar() {
   const createDocument = useCreateDocument()
   const pinDocument = usePinDocument()
   const pinFolder = usePinFolder()
+  const updateFolder = useUpdateFolder()
   const { user, logout } = useAuthStore()
   const createTask = useCreateTask()
   const createEvent = useCreateEvent()
   const { data: epics = [] } = useEpics()
   const [addingFolder, setAddingFolder] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const { data: archivedFolders = [] } = useArchivedFolders()
   const [accountOpen, setAccountOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddType, setQuickAddType] = useState<'task' | 'event'>('task')
@@ -280,6 +286,13 @@ export default function Sidebar() {
               </button>
               <div className="flex items-center gap-0.5">
                 <button
+                  title={showArchived ? 'Show active folders' : 'Show archived folders'}
+                  onClick={() => setShowArchived((s) => !s)}
+                  className={`p-0.5 rounded hover:bg-accent ${showArchived ? 'text-foreground bg-accent' : 'text-muted-foreground hover:text-foreground'}`}
+                >
+                  <Archive className="w-3.5 h-3.5" />
+                </button>
+                <button
                   title="New document (⌘N)"
                   onClick={() => createNewDocument()}
                   className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
@@ -303,39 +316,67 @@ export default function Sidebar() {
               </div>
             </div>
 
-            {addingFolder && (
-              <div className="px-2 pb-1">
-                <input
-                  ref={folderInputRef}
-                  placeholder="Folder name"
-                  className="w-full text-sm px-2 py-0.5 rounded border border-input bg-card outline-none focus:ring-1 focus:ring-primary"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                      createFolder.mutate({ name: e.currentTarget.value.trim() })
-                      setAddingFolder(false)
-                    }
-                    if (e.key === 'Escape') setAddingFolder(false)
-                  }}
-                  onBlur={() => setAddingFolder(false)}
-                />
+            {showArchived ? (
+              <div className="flex flex-col gap-0.5">
+                {archivedFolders.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">No archived folders</p>
+                )}
+                {archivedFolders.map((folder) => (
+                  <div key={folder.id} className="flex items-center gap-1.5 px-3 py-1 rounded-md text-sm group">
+                    <Folder className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <button
+                      onClick={() => navigate(`/folders/${folder.id}`)}
+                      className="flex-1 min-w-0 text-left truncate hover:underline"
+                    >
+                      {folder.name}
+                    </button>
+                    <button
+                      onClick={() => updateFolder.mutate({ id: folder.id, archived: false })}
+                      title="Unarchive"
+                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground shrink-0"
+                    >
+                      <ArchiveRestore className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            )}
+            ) : (
+              <>
+                {addingFolder && (
+                  <div className="px-2 pb-1">
+                    <input
+                      ref={folderInputRef}
+                      placeholder="Folder name"
+                      className="w-full text-sm px-2 py-0.5 rounded border border-input bg-card outline-none focus:ring-1 focus:ring-primary"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          createFolder.mutate({ name: e.currentTarget.value.trim() })
+                          setAddingFolder(false)
+                        }
+                        if (e.key === 'Escape') setAddingFolder(false)
+                      }}
+                      onBlur={() => setAddingFolder(false)}
+                    />
+                  </div>
+                )}
 
-            {isLoading && (
-              <div className="flex justify-center py-4">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            )}
+                {isLoading && (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
 
-            {!isLoading && workspace?.folders?.length === 0 && !addingFolder && (
-              <div className="flex flex-col items-center py-4 gap-2 text-muted-foreground">
-                <FilePlus className="w-8 h-8 opacity-30" />
-              </div>
-            )}
+                {!isLoading && workspace?.folders?.length === 0 && !addingFolder && (
+                  <div className="flex flex-col items-center py-4 gap-2 text-muted-foreground">
+                    <FilePlus className="w-8 h-8 opacity-30" />
+                  </div>
+                )}
 
-            {workspace?.folders?.map((folder) => (
-              <FolderItem key={folder.id} folder={folder} />
-            ))}
+                {workspace?.folders?.map((folder) => (
+                  <FolderItem key={folder.id} folder={folder} />
+                ))}
+              </>
+            )}
           </div>
         </div>
       </aside>

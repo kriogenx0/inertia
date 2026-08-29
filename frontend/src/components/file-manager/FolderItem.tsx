@@ -91,6 +91,7 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
     { label: 'New Subfolder', action: () => { setOpen(true); setAddingFolder(true) } },
     { label: folder.pinned ? 'Unpin' : 'Pin', action: () => pinFolder.mutate({ id: folder.id, pinned: !folder.pinned }) },
     { label: 'Rename', action: () => setRenamingFolder(true) },
+    { label: 'Archive', action: () => updateFolder.mutate({ id: folder.id, archived: true }) },
     { label: 'Delete', action: () => deleteFolder.mutate(folder.id), danger: true },
   ]
 
@@ -98,7 +99,7 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
     <div>
       {/* Folder row */}
       <div
-        className="group flex items-center gap-1 py-1 rounded-md hover:bg-accent cursor-pointer text-sm select-none"
+        className={`group flex items-center gap-1 py-1 rounded-md hover:bg-accent text-sm select-none ${location.pathname === `/folders/${folder.id}` ? 'bg-accent' : ''}`}
         style={{ paddingLeft: `${8 + indent}px`, paddingRight: '8px' }}
         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setFolderCtx({ x: e.clientX, y: e.clientY }) }}
       >
@@ -113,7 +114,13 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
             onCancel={() => setRenamingFolder(false)}
           />
         ) : (
-          <span className="flex-1 truncate text-foreground">{folder.name}</span>
+          <button
+            onClick={() => navigate(`/folders/${folder.id}`)}
+            title="Open folder — see its documents, tasks, and events"
+            className="flex-1 min-w-0 text-left truncate text-foreground cursor-pointer"
+          >
+            {folder.name}
+          </button>
         )}
         {folder.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
       </div>

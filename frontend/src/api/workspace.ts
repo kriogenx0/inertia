@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
-import type { Workspace, Folder, Document } from '@/types'
+import type { Workspace, Folder, Document, FolderContents } from '@/types'
 
 // ── Workspace ─────────────────────────────────────────────────────────────────
 
@@ -25,9 +25,32 @@ export function useCreateFolder() {
 export function useUpdateFolder() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; name?: string; pinned?: boolean }) =>
+    mutationFn: ({ id, ...data }: { id: number; name?: string; pinned?: boolean; parent_id?: number; archived?: boolean }) =>
       api.patch(`/api/v1/folders/${id}`, { folder: data }).then((r) => r.data as Folder),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['workspace'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workspace'] })
+      qc.invalidateQueries({ queryKey: ['archived-folders'] })
+    },
+  })
+}
+
+// Every archived folder in the workspace, flat regardless of nesting depth
+// (an archived subfolder's own active parent wouldn't surface it
+// otherwise) — backs the sidebar's "show archived" filter.
+export function useArchivedFolders() {
+  return useQuery<Folder[]>({
+    queryKey: ['archived-folders'],
+    queryFn: () => api.get('/api/v1/folders', { params: { archived: '1' } }).then((r) => r.data),
+  })
+}
+
+// A folder plus its documents/tasks/events/epics, scoped to it and every
+// subfolder nested underneath — what the folder detail page renders.
+export function useFolderContents(id: number | undefined) {
+  return useQuery<FolderContents>({
+    queryKey: ['folder-contents', id],
+    queryFn: () => api.get(`/api/v1/folders/${id}/contents`).then((r) => r.data),
+    enabled: id != null,
   })
 }
 
