@@ -1,5 +1,6 @@
 class Epic < ApplicationRecord
   belongs_to :workspace
+  belongs_to :folder, optional: true
   has_many :tasks, dependent: :nullify
 
   validates :title, presence: true

@@ -8,7 +8,13 @@ module Api
         tasks = tasks.where(document_id: params[:document_id]) if params[:document_id]
         tasks = tasks.where(status: params[:status]) if params[:status]
         tasks = tasks.where(epic_id: params[:epic_id]) if params[:epic_id]
-        tasks = tasks.joins(:document).where(documents: { folder_id: params[:folder_id] }) if params[:folder_id]
+        if params[:folder_id]
+          # A task can reach this folder directly, or through its document —
+          # left join so direct-folder tasks (no document at all) aren't
+          # excluded by an inner join against documents.
+          tasks = tasks.left_joins(:document)
+            .where("tasks.folder_id = :fid OR documents.folder_id = :fid", fid: params[:folder_id])
+        end
         tasks = tasks.where("tasks.title LIKE ?", "%#{params[:q]}%") if params[:q]
         render json: TaskBlueprint.render(tasks, view: :with_document)
       end
@@ -47,7 +53,7 @@ module Api
       end
 
       def task_params
-        params.require(:task).permit(:title, :description, :status, :due_date, :position, :assignee_id, :epic_id)
+        params.require(:task).permit(:title, :description, :status, :due_date, :position, :assignee_id, :epic_id, :folder_id)
       end
     end
   end

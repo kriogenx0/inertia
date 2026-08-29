@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_27_000002) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_27_000006) do
   create_table "documents", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
     t.json "content"
@@ -31,6 +31,10 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000002) do
     t.bigint "workspace_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "folder_id"
+    t.date "start_date"
+    t.date "target_date"
+    t.index ["folder_id"], name: "index_epics_on_folder_id"
     t.index ["workspace_id"], name: "index_epics_on_workspace_id"
   end
 
@@ -54,6 +58,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000002) do
     t.datetime "updated_at", null: false
     t.time "start_time"
     t.time "end_time"
+    t.bigint "folder_id"
+    t.index ["folder_id"], name: "index_events_on_folder_id"
     t.index ["workspace_id", "date"], name: "index_events_on_workspace_id_and_date"
     t.index ["workspace_id"], name: "index_events_on_workspace_id"
   end
@@ -66,6 +72,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000002) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "pinned", default: false, null: false
+    t.datetime "archived_at"
     t.index ["parent_id"], name: "index_folders_on_parent_id"
     t.index ["workspace_id"], name: "index_folders_on_workspace_id"
   end
@@ -101,9 +108,11 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000002) do
     t.datetime "updated_at", null: false
     t.bigint "workspace_id", null: false
     t.bigint "epic_id"
+    t.bigint "folder_id"
     t.index ["assignee_id"], name: "index_tasks_on_assignee_id"
     t.index ["document_id"], name: "index_tasks_on_document_id"
     t.index ["epic_id"], name: "index_tasks_on_epic_id"
+    t.index ["folder_id"], name: "index_tasks_on_folder_id"
     t.index ["status"], name: "index_tasks_on_status"
     t.index ["workspace_id"], name: "index_tasks_on_workspace_id"
   end
@@ -131,15 +140,18 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000002) do
 
   add_foreign_key "documents", "folders"
   add_foreign_key "documents", "users", column: "created_by_id"
+  add_foreign_key "epics", "folders"
   add_foreign_key "epics", "workspaces"
   add_foreign_key "event_tasks", "events"
   add_foreign_key "event_tasks", "tasks"
+  add_foreign_key "events", "folders"
   add_foreign_key "events", "workspaces"
   add_foreign_key "folders", "folders", column: "parent_id"
   add_foreign_key "folders", "workspaces"
   add_foreign_key "shares", "users", column: "created_by_id"
   add_foreign_key "tasks", "documents"
   add_foreign_key "tasks", "epics"
+  add_foreign_key "tasks", "folders"
   add_foreign_key "tasks", "users", column: "assignee_id"
   add_foreign_key "tasks", "workspaces"
   add_foreign_key "workspaces", "users"

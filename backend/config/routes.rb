@@ -15,6 +15,7 @@ Rails.application.routes.draw do
 
       resources :folders do
         resources :documents, shallow: true
+        member { get :contents }
       end
 
       resources :documents, only: [] do

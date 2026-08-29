@@ -8,6 +8,8 @@ module Api
         # instead of N+1'ing tasks.count/tasks.done.count per epic. The
         # CASE/SUM (not FILTER — that's Postgres-only) is MySQL-compatible.
         epics = current_user.workspace.epics
+        epics = epics.where(folder_id: params[:folder_id]) if params[:folder_id]
+        epics = epics
           .left_joins(:tasks)
           .group("epics.id")
           .select(
@@ -49,7 +51,7 @@ module Api
       end
 
       def epic_params
-        params.require(:epic).permit(:title)
+        params.require(:epic).permit(:title, :folder_id, :start_date, :target_date)
       end
     end
   end

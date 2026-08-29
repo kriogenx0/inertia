@@ -1,5 +1,6 @@
 class Event < ApplicationRecord
   belongs_to :workspace
+  belongs_to :folder, optional: true
   has_many :event_tasks, dependent: :destroy
   has_many :tasks, through: :event_tasks
 
