@@ -1,0 +1,35 @@
+# Production stack for the app droplet — just the Rails API. No `db`/`mysql`
+# service (the database is a DigitalOcean managed MySQL cluster, not
+# co-located with the app) and no `frontend` service (nginx serves the
+# webpack build copied by deploy.sh). No `redis` either: Inertia's
+# ActionCable setup is unused generator boilerplate (no real-time features),
+# so config/cable.yml's production adapter is `async`, not `redis` — nothing
+# in production actually needs Redis.
+#
+# Deployed via this repo's own deploy/deploy.sh, which manages nginx/certbot
+# and this file's .env on the host — see that script and this repo's own
+# README "Deploy" section. Mirrors ~/Sites/pocketproducer-web's pattern:
+# GitHub Actions builds the image and streams it to `docker load` on the
+# server before deploy.sh runs.
+#
+# SECRET_KEY_BASE and JWT_SECRET_KEY come from that same .env — Rails reads
+# SECRET_KEY_BASE directly from the environment (bypassing encrypted
+# credentials entirely; config/master.key doesn't need to exist on the
+# server, or anywhere, for this to work), and devise.rb already prefers
+# ENV["JWT_SECRET_KEY"] over Rails.application.credentials.
+services:
+  api:
+    image: inertia-backend:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      RAILS_ENV: production
+    ports:
+      - "127.0.0.1:${HOST_PORT}:3000"
+    volumes:
+      - storage:/rails/storage
+      - log:/rails/log
+
+volumes:
+  storage:
+  log:

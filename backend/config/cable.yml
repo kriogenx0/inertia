@@ -5,6 +5,8 @@ test:
   adapter: test
 
 production:
-  adapter: redis
-  url: <%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/1" } %>
-  channel_prefix: api_production
+  # No real-time features exist anywhere in the app (app/channels is unused
+  # rails-new boilerplate), so there's nothing that needs cross-process
+  # broadcasting — async (in-process, same as dev) avoids provisioning Redis
+  # in production for a capability nothing actually uses.
+  adapter: async

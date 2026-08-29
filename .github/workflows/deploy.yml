@@ -1,0 +1,101 @@
+name: Deploy
+
+# Mirrors ~/Sites/pocketproducer-web/.github/workflows/deploy.yml — same
+# shared droplet, same "test gate, then build and ship" shape. See this
+# repo's README "Deploy" section for the one-time setup this depends on.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      RAILS_ENV: test
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MySQL client library
+        run: sudo apt-get update && sudo apt-get install -y default-libmysqlclient-dev
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3.8"
+          bundler-cache: true
+          working-directory: backend
+
+      - name: Set up test database
+        working-directory: backend
+        run: bin/rails db:create db:schema:load
+
+      - name: Run test suite
+        working-directory: backend
+        run: bin/rails test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm ci && npm run build
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          load: true
+          tags: inertia-backend:latest
+
+      - name: Configure SSH agent
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H inertia.it.com >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+          ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
+
+      - name: Copy image to server
+        run: |
+          set -o pipefail
+          docker save inertia-backend:latest | gzip | ssh deploy@inertia.it.com 'gunzip | docker load'
+
+      # bin/docker-entrypoint runs db:prepare on every start, so migrations
+      # happen automatically once the container's up.
+      - name: Deploy
+        env:
+          RAILS_ENV: ${{ vars.RAILS_ENV || 'production' }}
+          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_PORT: ${{ vars.DATABASE_PORT || '25060' }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        run: deploy/deploy.sh
