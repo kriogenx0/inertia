@@ -8,7 +8,7 @@ module Api
         @event.event_tasks.find_or_create_by!(task: task)
         render json: EventBlueprint.render(@event.reload.tap { |e| e.association(:tasks).reset }, view: :with_tasks)
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Task not found' }, status: :not_found
+        render json: { error: "Task not found" }, status: :not_found
       end
 
       def destroy

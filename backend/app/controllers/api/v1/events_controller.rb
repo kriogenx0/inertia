@@ -1,7 +1,7 @@
 module Api
   module V1
     class EventsController < ApplicationController
-      before_action :set_event, only: [:update, :destroy]
+      before_action :set_event, only: [ :update, :destroy ]
 
       def index
         events = current_user.workspace.events.includes(tasks: :document).order(:date)

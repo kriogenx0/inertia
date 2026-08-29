@@ -18,12 +18,12 @@ class ApplicationController < ActionController::API
   end
 
   def bypass_auth?
-    ENV['BYPASS_AUTH'] == 'true'
+    ENV["BYPASS_AUTH"] == "true"
   end
 
   def bypass_auth!
     @bypass_user = User.first
-    render json: { error: 'No users found — run db:seed or create a user first' }, status: :unauthorized unless @bypass_user
+    render json: { error: "No users found — run db:seed or create a user first" }, status: :unauthorized unless @bypass_user
   end
 
   def forbidden

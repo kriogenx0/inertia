@@ -1,0 +1,24 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "Unmaintained Dependency",
+      "warning_code": 120,
+      "fingerprint": "d84924377155b41e094acae7404ec2e521629d86f97b0ff628e3d1b263f8101c",
+      "check_name": "EOLRails",
+      "message": "Support for Rails 7.2.3.1 ended on 2026-08-09",
+      "file": "Gemfile.lock",
+      "line": 212,
+      "link": "https://brakemanscanner.org/docs/warning_types/unmaintained_dependency/",
+      "code": null,
+      "render_path": null,
+      "location": null,
+      "user_input": null,
+      "confidence": "High",
+      "cwe_id": [
+        1104
+      ],
+      "note": "Real finding, deliberately deferred rather than silently swept aside: Rails 7.2 hit EOL 2026-08-09. Upgrading (7.2 -> 8.x) is a separate, larger task than what's currently in flight (production deployment) and needs its own planning pass, not a reactive fix to unblock CI. Re-run `bundle exec brakeman` without this ignore file to see it again; remove this entry once the upgrade happens."
+    }
+  ],
+  "updated": "2026-08-29 19:16:43 +0000"
+}

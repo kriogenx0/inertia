@@ -1,8 +1,8 @@
 module Api
   module V1
     class DocumentsController < ApplicationController
-      before_action :set_folder, only: [:index, :create]
-      before_action :set_document, only: [:show, :update, :destroy]
+      before_action :set_folder, only: [ :index, :create ]
+      before_action :set_document, only: [ :show, :update, :destroy ]
 
       def index
         documents = @folder.documents.order(:title)

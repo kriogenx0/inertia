@@ -5,9 +5,9 @@ class Api::V1::UploadsController < ApplicationController
 
   def create
     file = params[:file]
-    return render json: { error: 'No file provided' }, status: :unprocessable_entity unless file
-    return render json: { error: 'File type not allowed' }, status: :unprocessable_entity unless ALLOWED_TYPES.include?(file.content_type)
-    return render json: { error: 'File too large' }, status: :unprocessable_entity if file.size > MAX_SIZE
+    return render json: { error: "No file provided" }, status: :unprocessable_entity unless file
+    return render json: { error: "File type not allowed" }, status: :unprocessable_entity unless ALLOWED_TYPES.include?(file.content_type)
+    return render json: { error: "File too large" }, status: :unprocessable_entity if file.size > MAX_SIZE
 
     blob = ActiveStorage::Blob.create_and_upload!(
       io: file.tempfile,

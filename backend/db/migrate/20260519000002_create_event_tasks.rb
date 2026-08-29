@@ -7,6 +7,6 @@ class CreateEventTasks < ActiveRecord::Migration[7.2]
       t.timestamps
     end
 
-    add_index :event_tasks, [:event_id, :task_id], unique: true
+    add_index :event_tasks, [ :event_id, :task_id ], unique: true
   end
 end

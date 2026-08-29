@@ -31,7 +31,7 @@ class Folder < ApplicationRecord
   # SQL, and workspace folder trees are small enough that it's not worth
   # the complexity.
   def self_and_descendant_ids
-    ids = [id]
+    ids = [ id ]
     children.find_each { |child| ids.concat(child.self_and_descendant_ids) }
     ids
   end

@@ -4,7 +4,7 @@
 # random folders/documents/tasks/events on top of whatever's already there.
 
 FOLDER_NAMES = %w[Projects Personal Archive Notes Ideas Clients Research Marketing].freeze
-DOC_TITLE_PREFIXES = ["Meeting Notes", "Project Plan", "Design Doc", "Roadmap", "Spec", "Retro", "Onboarding Guide", "Budget", "Launch Checklist"].freeze
+DOC_TITLE_PREFIXES = [ "Meeting Notes", "Project Plan", "Design Doc", "Roadmap", "Spec", "Retro", "Onboarding Guide", "Budget", "Launch Checklist" ].freeze
 TASK_VERBS = %w[Fix Update Review Design Implement Test Refactor Deploy Document Investigate].freeze
 
 puts "Seeding database with random test data..."

@@ -14,7 +14,7 @@ class FolderTest < ActiveSupport::TestCase
     assert_includes ids, mid.id
     assert_includes ids, leaf.id
     assert_not_includes ids, unrelated.id
-    assert_equal [mid.id, leaf.id].sort, (mid.self_and_descendant_ids).sort
+    assert_equal [ mid.id, leaf.id ].sort, (mid.self_and_descendant_ids).sort
   end
 
   test "archive! and unarchive! toggle archived? and the active/archived scopes" do

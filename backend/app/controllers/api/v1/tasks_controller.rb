@@ -1,7 +1,7 @@
 module Api
   module V1
     class TasksController < ApplicationController
-      before_action :set_task, only: [:update, :destroy]
+      before_action :set_task, only: [ :update, :destroy ]
 
       def index
         tasks = current_workspace.tasks.includes(:document)

@@ -38,5 +38,3 @@ group :development, :test do
   # Generate random test/seed data
   gem "faker"
 end
-
-

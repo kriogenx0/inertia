@@ -1,7 +1,7 @@
 module Api
   module V1
     class FoldersController < ApplicationController
-      before_action :set_folder, only: [:show, :update, :destroy, :contents]
+      before_action :set_folder, only: [ :show, :update, :destroy, :contents ]
 
       def index
         if params[:archived] == "1"
@@ -47,7 +47,7 @@ module Api
             "epics.*",
             "COUNT(tasks.id) AS tasks_count",
             ActiveRecord::Base.sanitize_sql_array(
-              ["SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) AS done_tasks_count", Task.statuses[:done]]
+              [ "SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) AS done_tasks_count", Task.statuses[:done] ]
             )
           )
 
@@ -56,7 +56,7 @@ module Api
           documents: DocumentBlueprint.render_as_hash(documents),
           tasks: TaskBlueprint.render_as_hash(tasks, view: :with_document),
           events: EventBlueprint.render_as_hash(events),
-          epics: EpicBlueprint.render_as_hash(epics.to_a),
+          epics: EpicBlueprint.render_as_hash(epics.to_a)
         }
       end
 

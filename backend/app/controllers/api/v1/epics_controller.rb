@@ -1,7 +1,7 @@
 module Api
   module V1
     class EpicsController < ApplicationController
-      before_action :set_epic, only: [:update, :destroy]
+      before_action :set_epic, only: [ :update, :destroy ]
 
       def index
         # Grouped left join computes each epic's task counts in one query
@@ -16,7 +16,7 @@ module Api
             "epics.*",
             "COUNT(tasks.id) AS tasks_count",
             ActiveRecord::Base.sanitize_sql_array(
-              ["SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) AS done_tasks_count", Task.statuses[:done]]
+              [ "SUM(CASE WHEN tasks.status = ? THEN 1 ELSE 0 END) AS done_tasks_count", Task.statuses[:done] ]
             )
           )
         render json: EpicBlueprint.render(epics)

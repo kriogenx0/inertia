@@ -1,8 +1,8 @@
 module Api
   module V1
     class SharesController < ApplicationController
-      skip_before_action :authenticate_user!, only: [:access]
-      before_action :set_share, only: [:show, :destroy]
+      skip_before_action :authenticate_user!, only: [ :access ]
+      before_action :set_share, only: [ :show, :destroy ]
 
       def create
         shareable = find_shareable
