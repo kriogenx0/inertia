@@ -22,12 +22,17 @@ test:
   <<: *default
   database: inertia_test
 
-# Production gets a single DATABASE_URL (e.g. from the hosting platform)
-# instead of discrete host/user/password. It's kept separate from
-# development/test on purpose: a url's embedded database name silently
-# overrides the `database:` key above, and it must never be allowed to make
-# test/development point at the same physical database.
+# Production reads its connection info from Rails' encrypted credentials
+# (config/credentials.yml.enc, decrypted via RAILS_MASTER_KEY) instead of
+# plain environment variables — the only production secret passed in
+# directly is RAILS_MASTER_KEY itself. Explicit host/username/password
+# here (rather than relying on the `default` block's ENV-based ones) also
+# means production can never accidentally inherit dev/test's connection
+# info, or vice versa.
 production:
   <<: *default
   database: inertia_production
-  url: <%= ENV["DATABASE_URL"] %>
+  host: <%= Rails.application.credentials.dig(:database, :host) %>
+  port: <%= Rails.application.credentials.dig(:database, :port) %>
+  username: <%= Rails.application.credentials.dig(:database, :username) %>
+  password: <%= Rails.application.credentials.dig(:database, :password) %>

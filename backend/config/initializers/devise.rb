@@ -13,7 +13,11 @@ Devise.setup do |config|
   config.navigational_formats = []
 
   config.jwt do |jwt|
-    jwt.secret = ENV.fetch("JWT_SECRET_KEY") { Rails.application.credentials.secret_key_base }
+    # Dev/test set JWT_SECRET_KEY directly (see docker-compose.yml); production
+    # doesn't set that env var at all, so this falls through to the encrypted
+    # credential — see config/credentials.yml.enc and this repo's README
+    # "Deploy" section.
+    jwt.secret = ENV.fetch("JWT_SECRET_KEY") { Rails.application.credentials.jwt_secret_key }
     jwt.dispatch_requests = [
       ["POST", %r{^/api/v1/auth/login$}],
       ["POST", %r{^/api/v1/auth/signup$}]

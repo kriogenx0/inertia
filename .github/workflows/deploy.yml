@@ -92,10 +92,5 @@ jobs:
       - name: Deploy
         env:
           RAILS_ENV: ${{ vars.RAILS_ENV || 'production' }}
-          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
-          DATABASE_PORT: ${{ vars.DATABASE_PORT || '25060' }}
-          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
-          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: deploy/deploy.sh

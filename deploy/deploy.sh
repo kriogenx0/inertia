@@ -16,17 +16,14 @@
 # per-app grant at deploy/server/sudoers.d/inertia-web (installed once, by
 # hand, as admin — see that file's own header).
 #
-# No RAILS_MASTER_KEY needed: SECRET_KEY_BASE is set directly below, which
-# Rails reads before ever trying to decrypt config/credentials.yml.enc, and
-# JWT_SECRET_KEY is what devise.rb actually checks first. Neither requires
-# config/master.key to exist anywhere.
+# Only one secret to pass in: RAILS_MASTER_KEY. Everything else
+# (secret_key_base, jwt_secret_key, the database host/port/username/
+# password) lives in the committed, encrypted config/credentials.yml.enc —
+# this is the key that decrypts it. CI: the RAILS_MASTER_KEY repo secret;
+# by hand: RAILS_MASTER_KEY=$(cat backend/config/master.key) deploy/deploy.sh.
 set -euo pipefail
 
-: "${SECRET_KEY_BASE:?SECRET_KEY_BASE must be set in the environment}"
-: "${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set in the environment}"
-: "${DATABASE_HOST:?DATABASE_HOST must be set in the environment}"
-: "${DATABASE_USERNAME:?DATABASE_USERNAME must be set in the environment}"
-: "${DATABASE_PASSWORD:?DATABASE_PASSWORD must be set in the environment}"
+: "${RAILS_MASTER_KEY:?RAILS_MASTER_KEY must be set in the environment}"
 
 SSH_TARGET="deploy@inertia.it.com"
 DOMAIN="inertia.it.com"
@@ -81,12 +78,7 @@ write_env_var() {
 echo "==> Writing runtime secrets and variables to .env"
 {
   write_env_var RAILS_ENV "${RAILS_ENV:-production}"
-  write_env_var SECRET_KEY_BASE "$SECRET_KEY_BASE"
-  write_env_var JWT_SECRET_KEY "$JWT_SECRET_KEY"
-  write_env_var DATABASE_HOST "$DATABASE_HOST"
-  write_env_var DATABASE_PORT "${DATABASE_PORT:-}"
-  write_env_var DATABASE_USERNAME "$DATABASE_USERNAME"
-  write_env_var DATABASE_PASSWORD "$DATABASE_PASSWORD"
+  write_env_var RAILS_MASTER_KEY "$RAILS_MASTER_KEY"
   write_env_var CORS_ORIGINS "${CORS_ORIGINS:-https://$DOMAIN}"
   write_env_var HOST_PORT "$HOST_PORT"
   write_env_var SERVICE api

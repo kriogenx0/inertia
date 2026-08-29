@@ -28,3 +28,13 @@ MYSQL_PWD="${DB_PW}" mysql \
   -e "CREATE DATABASE IF NOT EXISTS inertia_production CHARACTER SET utf8mb4;"
 
 echo "Done."
+echo
+echo "Now put these into config/credentials.yml.enc's database: block (all"
+echo "secrets come from Rails credentials, not plain env vars — see the README"
+echo "'Deploy' section):"
+echo "  RAILS_MASTER_KEY=\$(cat config/master.key) bin/rails credentials:edit"
+echo "    database:"
+echo "      host: $DB_HOST"
+echo "      port: $DB_PORT"
+echo "      username: doadmin"
+echo "      password: <the password you just entered>"
