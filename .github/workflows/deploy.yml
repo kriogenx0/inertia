@@ -67,7 +67,7 @@ jobs:
         working-directory: frontend
         run: npm ci && npm run build
 
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: ./backend
           load: true
