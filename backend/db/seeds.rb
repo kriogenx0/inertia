@@ -3,7 +3,19 @@
 # not a production one — re-running it without a wipe will just pile up more
 # random folders/documents/tasks/events on top of whatever's already there.
 
-FOLDER_NAMES = %w[Projects Personal Archive Notes Ideas Clients Research Marketing].freeze
+# Root folders are each their own "app" — folders are recursive
+# projects/components (see Folder#self_and_descendant_ids), so seed data
+# should demonstrate that instead of looking like generic personal folders.
+FOLDER_NAMES = [
+  "Mobile App",
+  "Admin Dashboard",
+  "Marketing Site",
+  "Customer Portal",
+  "Internal Tools",
+  "API Gateway",
+  "Analytics Platform",
+  "Design System",
+].freeze
 DOC_TITLE_PREFIXES = [ "Meeting Notes", "Project Plan", "Design Doc", "Roadmap", "Spec", "Retro", "Onboarding Guide", "Budget", "Launch Checklist" ].freeze
 TASK_VERBS = %w[Fix Update Review Design Implement Test Refactor Deploy Document Investigate].freeze
 
