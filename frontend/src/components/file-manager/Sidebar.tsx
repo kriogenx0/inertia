@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
   Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
-  Plus, Target, Archive, ArchiveRestore,
+  Plus, Target, Archive, ArchiveRestore, Keyboard,
 } from 'lucide-react'
 import {
   useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder,
@@ -17,6 +17,18 @@ import { useTabsStore } from '@/store/tabs'
 import { FolderItem } from './FolderItem'
 import api from '@/lib/api'
 import logo from '@/assets/logo.png'
+
+// Kept in sync by hand with the onKey handler below — there's only one
+// place global shortcuts are bound, so this is just their display copy.
+const KEYBOARD_SHORTCUTS: { keys: string; label: string }[] = [
+  { keys: '⌘K', label: 'Quick-add a task or event' },
+  { keys: '⌘N', label: 'New document' },
+  { keys: '⌘T', label: 'New task' },
+  { keys: '⌘E', label: 'New event' },
+  { keys: '⌘W', label: 'Close the active tab' },
+  { keys: '⌘/', label: 'Show or hide this list' },
+  { keys: 'Esc', label: 'Close a dialog or panel' },
+]
 
 function todayISO() {
   const d = new Date()
@@ -62,6 +74,7 @@ export default function Sidebar() {
   const [showArchived, setShowArchived] = useState(false)
   const { data: archivedFolders = [] } = useArchivedFolders()
   const [accountOpen, setAccountOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddType, setQuickAddType] = useState<'task' | 'event'>('task')
   const [quickAddTitle, setQuickAddTitle] = useState('')
@@ -74,6 +87,12 @@ export default function Sidebar() {
   createNewDocumentRef.current = createNewDocument
   const openQuickAddRef = useRef(openQuickAdd)
   openQuickAddRef.current = openQuickAdd
+  const shortcutsOpenRef = useRef(shortcutsOpen)
+  shortcutsOpenRef.current = shortcutsOpen
+  const accountOpenRef = useRef(accountOpen)
+  accountOpenRef.current = accountOpen
+  const quickAddOpenRef = useRef(quickAddOpen)
+  quickAddOpenRef.current = quickAddOpen
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -102,9 +121,19 @@ export default function Sidebar() {
   }
 
   // Cmd+N → new document, Cmd+T → new task, Cmd+E → new event, Cmd+W → close
-  // tab, Cmd+K → quick-add a task or event without leaving the current page
+  // tab, Cmd+K → quick-add a task or event without leaving the current page,
+  // Cmd+/ (or Cmd+? — Shift+/ on a US layout) → toggle the shortcuts cheat
+  // sheet. Keep KEYBOARD_SHORTCUTS below in sync with this list.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        // Not gated by metaKey — Escape closes whichever of this rail's own
+        // overlays is open, matching the "Esc" row in the shortcuts list.
+        if (shortcutsOpenRef.current) setShortcutsOpen(false)
+        else if (accountOpenRef.current) setAccountOpen(false)
+        else if (quickAddOpenRef.current) setQuickAddOpen(false)
+        return
+      }
       if (!(e.metaKey || e.ctrlKey)) return
       if (e.key === 'n') {
         e.preventDefault()
@@ -118,6 +147,9 @@ export default function Sidebar() {
       } else if (e.key === 'k') {
         e.preventDefault()
         openQuickAddRef.current()
+      } else if (e.key === '/' || e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen((open) => !open)
       } else if (e.key === 'w') {
         // Always prevented, even with no tab open: Electron's default macOS
         // menu binds Cmd+W to closing the whole window (see main.cjs), and
@@ -196,6 +228,7 @@ export default function Sidebar() {
         <div className="flex-1 w-full" style={{ WebkitAppRegion: 'drag' } as CSSProperties} />
         <div className="flex flex-col items-center gap-1 py-2">
           <RailButton icon={Plus} label="Quick add (⌘K)" onClick={openQuickAdd} />
+          <RailButton icon={Keyboard} label="Keyboard shortcuts (⌘/)" onClick={() => setShortcutsOpen(true)} />
           <button
             onClick={() => setAccountOpen(true)}
             title={user?.name ?? 'Account'}
@@ -401,6 +434,26 @@ export default function Sidebar() {
               >
                 Sign out
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard shortcuts modal */}
+      {shortcutsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShortcutsOpen(false)}>
+          <div className="bg-card border rounded-xl shadow-xl w-80 p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <Keyboard className="w-4 h-4 text-muted-foreground" />
+              <h2 className="font-semibold text-sm">Keyboard shortcuts</h2>
+            </div>
+            <div className="flex flex-col gap-2">
+              {KEYBOARD_SHORTCUTS.map(({ keys, label }) => (
+                <div key={keys} className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">{label}</span>
+                  <kbd className="px-1.5 py-0.5 rounded border bg-muted text-xs font-mono shrink-0">{keys}</kbd>
+                </div>
+              ))}
             </div>
           </div>
         </div>
