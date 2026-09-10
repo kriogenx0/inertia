@@ -48,6 +48,7 @@ module.exports = (_env, argv) => {
         // string), so `?? 'default'` fallbacks in source still work when
         // these aren't set — an empty-string fallback here would break them.
         'process.env.API_URL': JSON.stringify(process.env.API_URL),
+        'process.env.COLLAB_URL': JSON.stringify(process.env.COLLAB_URL),
         'process.env.BYPASS_AUTH': JSON.stringify(process.env.BYPASS_AUTH),
       }),
       !isDev && new MiniCssExtractPlugin({ filename: '[name].[contenthash].css' }),

@@ -47,18 +47,24 @@ scp "$SCRIPT_DIR/../docker-compose.prod.yml" "$SSH_TARGET:$REMOTE_DIR/docker-com
 echo "==> Copying web app"
 COPYFILE_DISABLE=1 tar -C "$WEB_DIST" -czf - . | ssh "$SSH_TARGET" "mkdir -p '$REMOTE_DIR/web' && tar -C '$REMOTE_DIR/web' -xzf -"
 
-echo "==> Picking (or reusing) a host port"
-HOST_PORT=$(ssh "$SSH_TARGET" bash -s -- "$REMOTE_DIR" <<'REMOTE'
+pick_port() {
+  local VAR_NAME="$1"
+  ssh "$SSH_TARGET" bash -s -- "$REMOTE_DIR" "$VAR_NAME" <<'REMOTE'
 set -e
 cd "$1"
-port=$(grep -m1 '^HOST_PORT=' .env 2>/dev/null | cut -d= -f2 | sed 's/[^0-9]//g' || true)
+port=$(grep -m1 "^$2=" .env 2>/dev/null | cut -d= -f2 | sed 's/[^0-9]//g' || true)
 if [ -z "$port" ]; then
   port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
 fi
 echo "$port"
 REMOTE
-)
+}
+
+echo "==> Picking (or reusing) a host port for each service"
+HOST_PORT=$(pick_port HOST_PORT)
 echo "    HOST_PORT=$HOST_PORT"
+COLLAB_PORT=$(pick_port COLLAB_PORT)
+echo "    COLLAB_PORT=$COLLAB_PORT"
 
 write_env_var() {
   local NAME="$1"
@@ -81,16 +87,17 @@ echo "==> Writing runtime secrets and variables to .env"
   write_env_var RAILS_MASTER_KEY "$RAILS_MASTER_KEY"
   write_env_var CORS_ORIGINS "${CORS_ORIGINS:-https://$DOMAIN}"
   write_env_var HOST_PORT "$HOST_PORT"
+  write_env_var COLLAB_PORT "$COLLAB_PORT"
   write_env_var SERVICE api
 } | ssh "$SSH_TARGET" "umask 077; cat > '$REMOTE_DIR/.env'; chmod 600 '$REMOTE_DIR/.env'"
 
-echo "==> Recreating the api container from the image loaded by CI"
-ssh "$SSH_TARGET" "cd '$REMOTE_DIR' && docker compose up -d --force-recreate --no-deps --pull never api && docker image prune -f"
+echo "==> Recreating the api and collab containers from the images loaded by CI"
+ssh "$SSH_TARGET" "cd '$REMOTE_DIR' && docker compose up -d --force-recreate --no-deps --pull never api collab && docker image prune -f"
 
 install_vhost() {
   local SRC="$1"
   local RENDERED; RENDERED=$(mktemp)
-  sed "s/__HOST_PORT__/$HOST_PORT/g" "$SRC" > "$RENDERED"
+  sed "s/__HOST_PORT__/$HOST_PORT/g; s/__COLLAB_PORT__/$COLLAB_PORT/g" "$SRC" > "$RENDERED"
   scp "$RENDERED" "$SSH_TARGET:/tmp/$(basename "$SRC")"
   rm -f "$RENDERED"
   ssh "$SSH_TARGET" "sudo -n /bin/cp /tmp/$(basename "$SRC") /etc/nginx/sites-available/$DOMAIN && sudo -n /bin/ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN && sudo -n /usr/sbin/nginx -t && sudo -n /bin/systemctl reload nginx"
@@ -113,4 +120,4 @@ echo "==> Renewing the cert if due (no-op otherwise — webroot mode never touch
 ssh "$SSH_TARGET" "$CERTBOT_CMD"
 ssh "$SSH_TARGET" "sudo -n /bin/systemctl reload nginx"
 
-echo "Done. https://$DOMAIN -> 127.0.0.1:$HOST_PORT"
+echo "Done. https://$DOMAIN -> 127.0.0.1:$HOST_PORT (collab: 127.0.0.1:$COLLAB_PORT)"

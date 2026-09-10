@@ -68,13 +68,38 @@ services:
       - "5174:5174"
     environment:
       API_URL: http://localhost:3000
+      COLLAB_URL: ws://localhost:1234
       BYPASS_AUTH: "true"
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules
+
+  # Real-time collaborative editing (Yjs/Hocuspocus) for Tiptap documents.
+  # Holds no secrets of its own — onAuthenticate delegates both auth and
+  # authorization to Rails' own GET /api/v1/documents/:id (see
+  # collab-server/src/auth.ts).
+  collab:
+    build:
+      context: ./collab-server
+      dockerfile: Dockerfile.dev
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+    ports:
+      - "1234:1234"
+    depends_on:
+      - backend
+    environment:
+      RAILS_INTERNAL_URL: http://backend:3000
+      PORT: "1234"
+    volumes:
+      - ./collab-server:/app
+      - collab_node_modules:/app/node_modules
 
 volumes:
   mysql_data:
   redis_data:
   backend_bundle:
   frontend_node_modules:
+  collab_node_modules:

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth'
 import LoginPage from '@/pages/auth/LoginPage'
 import SignupPage from '@/pages/auth/SignupPage'
@@ -14,6 +14,15 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
   if (process.env.BYPASS_AUTH === 'true') return <>{children}</>
   return token ? <>{children}</> : <Navigate to="/login" replace />
+}
+
+// DocumentPage owns a per-document Y.Doc/HocuspocusProvider pair for
+// real-time collaboration (see DocumentPage.tsx) — that binding isn't
+// reactive to a changed id, so navigating between two documents needs a full
+// remount, not just new props. `key={id}` forces that.
+function DocumentRoute() {
+  const { id } = useParams()
+  return <DocumentPage key={id} />
 }
 
 export default function App() {
@@ -42,7 +51,7 @@ export default function App() {
         path="/documents/:id"
         element={
           <PrivateRoute>
-            <DocumentPage />
+            <DocumentRoute />
           </PrivateRoute>
         }
       />

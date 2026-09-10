@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import * as Y from 'yjs'
+import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useEditor, EditorContent } from '@tiptap/react'
+import Collaboration from '@tiptap/extension-collaboration'
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import TiptapDocument from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
@@ -61,6 +65,7 @@ import { WorkspaceTaskList } from '@/extensions/WorkspaceTaskList'
 import { WorkspaceTaskItem } from '@/extensions/WorkspaceTaskItem'
 import api from '@/lib/api'
 import { useTabsStore } from '@/store/tabs'
+import { useAuthStore } from '@/store/auth'
 
 // Enforce: document always starts with a heading followed by body content
 const CustomDocument = TiptapDocument.extend({ content: 'heading block*' })
@@ -86,6 +91,14 @@ function buildInitialContent(title: string): Record<string, unknown> {
       { type: 'paragraph' },
     ],
   }
+}
+
+// Deterministic user id -> HSL hue, so the same user always gets the same
+// collaboration cursor color across tabs/sessions, and different users
+// visibly differ.
+function colorForUserId(userId: number | undefined): string {
+  const hue = ((userId ?? 0) * 137.508) % 360 // golden-angle spacing
+  return `hsl(${hue}, 70%, 45%)`
 }
 
 function ToolbarBtn({
@@ -129,10 +142,31 @@ export default function DocumentPage() {
   const updateDocument = useUpdateDocument()
   const createTask = useCreateTask()
   const { data: workspace } = useWorkspace()
+  const user = useAuthStore((s) => s.user)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const pendingRef = useRef<{ title?: string; content?: Record<string, unknown> }>({})
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const { openTab, updateTitle } = useTabsStore()
+
+  // Real-time collaboration (doc_type 'document' only — spreadsheets have
+  // their own independent save path in SpreadsheetEditor.tsx). The Y.Doc and
+  // provider are memoized per docId; App.tsx's DocumentRoute remounts this
+  // whole component on navigation (key={id}), since Collaboration's Y.Doc
+  // binding isn't itself reactive to a changed id.
+  const ydoc = useMemo(() => new Y.Doc(), [docId])
+  const provider = useMemo(() => {
+    if (doc?.doc_type !== 'document') return null
+    return new HocuspocusProvider({
+      url: process.env.COLLAB_URL ?? 'ws://localhost:1234',
+      name: `document-${docId}`,
+      document: ydoc,
+      token: () => useAuthStore.getState().token ?? '',
+    })
+  }, [docId, ydoc, doc?.doc_type])
+
+  useEffect(() => {
+    return () => provider?.destroy()
+  }, [provider])
 
   // Open/update tab when doc loads
   useEffect(() => {
@@ -194,7 +228,18 @@ export default function DocumentPage() {
       TableRow,
       TableCell,
       TableHeader,
-      History,
+      // Exactly one undo mechanism must always be present — Collaboration
+      // and History conflict if both are active, but the toolbar's undo/redo
+      // buttons call editor.can().undo()/.redo() unconditionally, so a
+      // moment with neither (e.g. mid-recreate while `provider` transitions
+      // from null to a real instance once `doc` loads) throws outright.
+      ...(provider ? [
+        Collaboration.configure({ document: ydoc }),
+        CollaborationCursor.configure({
+          provider,
+          user: { name: user?.name ?? 'Anonymous', color: colorForUserId(user?.id) },
+        }),
+      ] : [ History ]),
       Placeholder.configure({
         placeholder: ({ node }) =>
           node.type.name === 'heading' ? 'Untitled' : 'Start writing…',
@@ -206,13 +251,25 @@ export default function DocumentPage() {
     onUpdate: ({ editor }) => {
       const content = editor.getJSON() as Record<string, unknown>
       const title = extractTitle(content)
-      scheduleSaveRef.current({ content, title })
+      // Under collaboration, Hocuspocus's onStoreDocument (collab-server/src/
+      // persistence.ts) is the sole writer of `content` — PATCHing it here
+      // too would race two uncoordinated writers on the same column. Title
+      // isn't part of the Yjs-synced content, so it still needs this path.
+      scheduleSaveRef.current(provider ? { title } : { content, title })
     },
-  })
+  }, [provider])
 
   useEffect(() => {
     if (!editor || !doc) return
     if (doc.doc_type === 'spreadsheet') return
+    // Collaborative content arrives via Yjs sync (seeded server-side from
+    // this same Rails content by collab-server's onLoadDocument), not this
+    // effect — calling setContent directly on a collaborative editor fights
+    // the ySyncPlugin binding.
+    if (provider) {
+      setSaveStatus('saved')
+      return
+    }
     if (doc.content) {
       editor.commands.setContent(doc.content)
     } else {
@@ -224,16 +281,31 @@ export default function DocumentPage() {
       editor.commands.focus()
     }
     setSaveStatus('saved')
-  }, [editor, doc?.id])
+  }, [editor, doc?.id, provider])
 
   useEffect(() => {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   }, [])
 
+  // Only the "leader" among currently-connected collaborators runs
+  // syncTaskNodes — with real-time editing, two people finishing an
+  // untagged task line within the same debounce window is a real
+  // possibility, not just a single-user-across-tabs edge case, and this
+  // function has no server-side locking against creating duplicate Tasks
+  // for the same node. Elect the connection with the numerically lowest
+  // awareness clientID; non-collaborative documents (no provider) have no
+  // one to race with, so always proceed.
+  function isTaskSyncLeader(): boolean {
+    const awareness = provider?.awareness
+    if (!awareness) return true
+    const ids = [ awareness.clientID, ...awareness.states.keys() ]
+    return awareness.clientID === Math.min(...ids)
+  }
+
   // After each save, create workspace tasks for any unlinked task items in the document.
   // Reads workspace/createTask from refs so it's never stale regardless of when it's called.
   async function syncTaskNodes(currentEditor: ReturnType<typeof useEditor>) {
-    if (!currentEditor) return
+    if (!currentEditor || !isTaskSyncLeader()) return
     const ws = workspaceRef.current
     const allDocs = ws?.folders?.flatMap((f) => f.documents ?? []) ?? []
     const targetDocId = allDocs.find((d) => d.id === docId)?.id ?? allDocs[0]?.id

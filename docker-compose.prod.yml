@@ -1,10 +1,12 @@
-# Production stack for the app droplet — just the Rails API. No `db`/`mysql`
-# service (the database is a DigitalOcean managed MySQL cluster, not
-# co-located with the app) and no `frontend` service (nginx serves the
-# webpack build copied by deploy.sh). No `redis` either: Inertia's
-# ActionCable setup is unused generator boilerplate (no real-time features),
-# so config/cable.yml's production adapter is `async`, not `redis` — nothing
-# in production actually needs Redis.
+# Production stack for the app droplet — the Rails API plus the real-time
+# collaboration service. No `db`/`mysql` service (the database is a
+# DigitalOcean managed MySQL cluster, not co-located with the app) and no
+# `frontend` service (nginx serves the webpack build copied by deploy.sh).
+# No `redis` either: Inertia's ActionCable setup is unused generator
+# boilerplate (no real-time features built on it), so config/cable.yml's
+# production adapter is `async`, not `redis` — nothing in production needs
+# Redis. Document collaboration (below) is a separate Node/Hocuspocus
+# service, not ActionCable.
 #
 # Deployed via this repo's own deploy/deploy.sh, which manages nginx/certbot
 # and this file's .env on the host — see that script and this repo's own
@@ -28,6 +30,21 @@ services:
     volumes:
       - storage:/rails/storage
       - log:/rails/log
+
+  # Real-time collaborative editing (Yjs/Hocuspocus) — see collab-server/'s
+  # own README-equivalent header comments. Holds no secrets of its own:
+  # onAuthenticate delegates both auth and authorization to `api`'s own
+  # GET /api/v1/documents/:id, so there's no env_file here.
+  collab:
+    image: inertia-collab:latest
+    restart: unless-stopped
+    environment:
+      RAILS_INTERNAL_URL: http://api:3000
+      PORT: "1234"
+    ports:
+      - "127.0.0.1:${COLLAB_PORT}:1234"
+    depends_on:
+      - api
 
 volumes:
   storage:

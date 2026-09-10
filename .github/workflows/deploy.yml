@@ -63,8 +63,15 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      # API_URL was never set here before, so this build would have shipped
+      # with lib/api.ts's dev fallback (http://localhost:3000) baked into
+      # every real visitor's bundle — broken regardless of collaboration.
+      # Fixed alongside COLLAB_URL since it's the same build step.
       - name: Build frontend
         working-directory: frontend
+        env:
+          API_URL: https://inertia.it.com
+          COLLAB_URL: wss://inertia.it.com/collab
         run: npm ci && npm run build
 
       - uses: docker/build-push-action@v6
@@ -72,6 +79,12 @@ jobs:
           context: ./backend
           load: true
           tags: inertia-backend:latest
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./collab-server
+          load: true
+          tags: inertia-collab:latest
 
       - name: Configure SSH agent
         run: |
@@ -82,10 +95,10 @@ jobs:
           echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
           ssh-add - <<< "${{ secrets.DEPLOY_SSH_KEY }}"
 
-      - name: Copy image to server
+      - name: Copy images to server
         run: |
           set -o pipefail
-          docker save inertia-backend:latest | gzip | ssh deploy@inertia.it.com 'gunzip | docker load'
+          docker save inertia-backend:latest inertia-collab:latest | gzip | ssh deploy@inertia.it.com 'gunzip | docker load'
 
       # bin/docker-entrypoint runs db:prepare on every start, so migrations
       # happen automatically once the container's up.

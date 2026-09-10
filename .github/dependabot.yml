@@ -20,6 +20,20 @@ updates:
     # Do the v3 migration as one deliberate PR instead of via dependabot.
     - dependency-name: "@tiptap/*"
       update-types: [ "version-update:semver-major" ]
+- package-ecosystem: npm
+  directory: "/collab-server"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  groups:
+    tiptap:
+      patterns: [ "@tiptap/*" ]
+  ignore:
+    # Mirrors the /frontend entry above — this schema-only mirror
+    # (collab-server/src/schema.ts) must stay on the same Tiptap major line
+    # as the frontend's real editor.
+    - dependency-name: "@tiptap/*"
+      update-types: [ "version-update:semver-major" ]
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
