@@ -30,6 +30,12 @@ const KEYBOARD_SHORTCUTS: { keys: string; label: string }[] = [
   { keys: 'Esc', label: 'Close a dialog or panel' },
 ]
 
+// The extra top padding/drag-region reserve room for macOS's traffic
+// lights, which only exist in the packaged Electron app's frameless
+// window — in a normal browser tab there's nothing to reserve space for,
+// so it just reads as unwanted empty padding.
+const isElectron = navigator.userAgent.toLowerCase().includes('electron')
+
 function todayISO() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -218,7 +224,9 @@ export default function Sidebar() {
           top-left corner, so the top strip and the flexible middle spacer
           are both drag regions (nothing interactive sits in either). */}
       <nav className="w-14 border-r bg-muted/30 flex flex-col items-center h-screen shrink-0">
-        <div className="h-8 w-full shrink-0" style={{ WebkitAppRegion: 'drag' } as CSSProperties} />
+        {isElectron && (
+          <div className="h-8 w-full shrink-0" style={{ WebkitAppRegion: 'drag' } as CSSProperties} />
+        )}
         <div className="flex flex-col items-center gap-1 py-2">
           <RailButton icon={FileText} label="Documents" active={isDocumentsSection} onClick={() => navigate('/documents')} />
           <RailButton icon={CheckSquare} label="Tasks" active={location.pathname === '/tasks'} onClick={() => navigate('/tasks?view=backlog')} />
@@ -244,7 +252,7 @@ export default function Sidebar() {
           rail. */}
       <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
         <div
-          className="px-3 pt-8 pb-3 border-b flex items-center gap-2"
+          className={`px-3 pb-3 flex items-center gap-2 ${isElectron ? 'pt-8' : 'pt-3'}`}
           style={{ WebkitAppRegion: 'drag' } as CSSProperties}
         >
           <img src={logo} alt="" className="w-6 h-6 rounded-md shrink-0" />
