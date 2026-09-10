@@ -14,7 +14,7 @@ FOLDER_NAMES = [
   "Internal Tools",
   "API Gateway",
   "Analytics Platform",
-  "Design System",
+  "Design System"
 ].freeze
 DOC_TITLE_PREFIXES = [ "Meeting Notes", "Project Plan", "Design Doc", "Roadmap", "Spec", "Retro", "Onboarding Guide", "Budget", "Launch Checklist" ].freeze
 TASK_VERBS = %w[Fix Update Review Design Implement Test Refactor Deploy Document Investigate].freeze
