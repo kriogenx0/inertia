@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import {
   Loader2, ArrowLeft, ArrowRight, Archive, ArchiveRestore,
   LayoutList, Kanban as KanbanIcon, Calendar as CalendarIcon, GanttChart,
-  ChevronLeft, ChevronRight, FileText, Table as TableIcon,
+  ChevronLeft, ChevronRight, FileText, Table as TableIcon, LayoutDashboard,
 } from 'lucide-react'
 import {
   format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -35,6 +35,7 @@ const STATUS_DOT: Record<Task['status'], string> = {
 }
 
 const VIEWS = [
+  { key: 'overview', label: 'Overview', icon: LayoutDashboard },
   { key: 'board', label: 'Board', icon: KanbanIcon },
   { key: 'list', label: 'List', icon: LayoutList },
   { key: 'calendar', label: 'Calendar', icon: CalendarIcon },
@@ -234,6 +235,145 @@ function GanttView({ epics }: { epics: Epic[] }) {
   )
 }
 
+// ── Overview — the landing view when you click into a folder: a dashboard
+// (a few high-level epics, upcoming events) plus the folder's documents
+// shown as a proper primary section rather than the thin chip row the other
+// four views get. ────────────────────────────────────────────────────────
+
+function ProgressBar({ percent }: { percent: number }) {
+  return (
+    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${percent}%` }} />
+    </div>
+  )
+}
+
+// A small header-row link to a sibling view — always shown regardless of
+// whether this section has any data, since Overview doubles as the
+// navigation hub for "every other way to look at this folder."
+function ViewLink({ folderId, view, label, navigate }: { folderId: number; view: string; label: string; navigate: (path: string) => void }) {
+  return (
+    <button
+      onClick={() => navigate(`/folders/${folderId}?view=${view}`)}
+      className="text-xs text-muted-foreground hover:text-foreground"
+    >
+      {label} →
+    </button>
+  )
+}
+
+function OverviewView({
+  folderId, documents, tasks, epics, events, navigate,
+}: {
+  folderId: number
+  documents: { id: number; title: string; doc_type: 'document' | 'spreadsheet' }[]
+  tasks: Task[]
+  epics: Epic[]
+  events: WorkspaceEvent[]
+  navigate: (path: string) => void
+}) {
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+  const upcomingEvents = events.filter((e) => e.date >= todayStr).slice(0, 5)
+  const openTasks = tasks.filter((t) => t.status !== 'done')
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="max-w-3xl mx-auto flex flex-col gap-8">
+        <section>
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Documents</h2>
+          {documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No documents yet.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {documents.map((doc) => (
+                <Link
+                  key={doc.id}
+                  to={`/documents/${doc.id}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-accent text-sm min-w-0"
+                >
+                  {doc.doc_type === 'spreadsheet'
+                    ? <TableIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+                    : <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                  }
+                  <span className="truncate">{doc.title}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Tasks — links to both task views (Board/List) regardless of
+            whether there's anything open right now. */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tasks</h2>
+            <div className="flex items-center gap-3">
+              <ViewLink folderId={folderId} view="board" label="Board" navigate={navigate} />
+              <ViewLink folderId={folderId} view="list" label="List" navigate={navigate} />
+            </div>
+          </div>
+          {openTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nothing open.</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {openTasks.length} open task{openTasks.length === 1 ? '' : 's'}
+            </p>
+          )}
+        </section>
+
+        {/* High-level tasks — this app's Epics already are that: a handful
+            of top-level items each rolling up several Tasks' completion
+            into one progress bar. Body only shows when there are any; the
+            link to Gantt stays regardless, same as Tasks/Events above. */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Epics</h2>
+            <ViewLink folderId={folderId} view="gantt" label="Gantt" navigate={navigate} />
+          </div>
+          {epics.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No epics yet.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {epics.slice(0, 5).map((epic) => {
+                const percent = epic.tasks_count > 0 ? Math.round((epic.done_tasks_count / epic.tasks_count) * 100) : 0
+                return (
+                  <div key={epic.id} className="flex items-center gap-3">
+                    <span className="flex-1 text-sm truncate" title={epic.title}>{epic.title}</span>
+                    <div className="w-32 shrink-0"><ProgressBar percent={percent} /></div>
+                    <span className="w-14 text-xs text-muted-foreground text-right shrink-0">
+                      {epic.done_tasks_count}/{epic.tasks_count}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Upcoming Events</h2>
+            <ViewLink folderId={folderId} view="calendar" label="Calendar" navigate={navigate} />
+          </div>
+          {upcomingEvents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No upcoming events.</p>
+          ) : (
+            <div className="flex flex-col divide-y">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="flex items-center gap-3 py-2">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${event.event_type === 'milestone' ? 'bg-purple-500' : 'bg-orange-500'}`} />
+                  <span className="flex-1 text-sm truncate">{event.title}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{format(parseISO(event.date), 'MMM d')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function FolderDetailPage() {
@@ -241,7 +381,7 @@ export default function FolderDetailPage() {
   const folderId = Number(id)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const view = VIEWS.find((v) => v.key === searchParams.get('view'))?.key ?? 'board'
+  const view = VIEWS.find((v) => v.key === searchParams.get('view'))?.key ?? 'overview'
 
   const { data, isLoading } = useFolderContents(folderId)
   const updateFolder = useUpdateFolder()
@@ -288,10 +428,11 @@ export default function FolderDetailPage() {
           </button>
         </div>
 
-        {/* Documents — always visible regardless of which of the four views
-            below is active, since they're part of "everything in this
-            folder" too, just not one of the four requested view modes. */}
-        {documents.length > 0 && (
+        {/* Documents — always visible regardless of which view is active,
+            since they're part of "everything in this folder" too. Skipped
+            on Overview, which already gives documents their own full
+            section instead of this thin chip row. */}
+        {view !== 'overview' && documents.length > 0 && (
           <div className="border-b px-6 py-2 shrink-0 flex items-center gap-2 overflow-x-auto">
             {documents.map((doc) => (
               <Link
@@ -309,6 +450,9 @@ export default function FolderDetailPage() {
           </div>
         )}
 
+        {view === 'overview' && (
+          <OverviewView folderId={folderId} documents={documents} tasks={tasks} epics={epics} events={events} navigate={navigate} />
+        )}
         {view === 'board' && (
           <BoardView
             tasks={tasks}
