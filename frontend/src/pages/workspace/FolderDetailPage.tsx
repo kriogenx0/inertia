@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import {
   Loader2, ArrowLeft, ArrowRight, Archive, ArchiveRestore,
@@ -85,21 +85,85 @@ function BoardView({ tasks, onAdvance }: { tasks: Task[]; onAdvance: (task: Task
   )
 }
 
-// ── List — every task regardless of status, backlog included. ──────────────
+// ── List — every task regardless of status, backlog included, nested under
+// its parent task to any depth (top-level task -> subtask -> sub-subtask ->
+// ...). Two independent ways to manage depth: a global "Level 1 only /
+// Levels 1–2 / All levels" cutoff for hiding whole tiers at once, and a
+// per-task collapse arrow for folding just one subtree. ────────────────────
+
+interface TaskNode extends Task { children: TaskNode[] }
+
+function buildTaskTree(tasks: Task[]): TaskNode[] {
+  const byId = new Map<number, TaskNode>(tasks.map((t) => [ t.id, { ...t, children: [] } ]))
+  const roots: TaskNode[] = []
+  byId.forEach((node) => {
+    const parent = node.parent_id != null ? byId.get(node.parent_id) : undefined
+    if (parent) parent.children.push(node)
+    else roots.push(node)
+  })
+  return roots
+}
+
+const DEPTH_OPTIONS: { label: string; maxDepth: number | null }[] = [
+  { label: 'Level 1 only', maxDepth: 0 },
+  { label: 'Levels 1–2', maxDepth: 1 },
+  { label: 'All levels', maxDepth: null },
+]
 
 function TaskListView({ tasks }: { tasks: Task[] }) {
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set())
+  const [maxDepth, setMaxDepth] = useState<number | null>(null)
+  const tree = useMemo(() => buildTaskTree(tasks), [tasks])
+
+  function toggleCollapse(id: number) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function renderNode(node: TaskNode, depth: number): React.ReactNode {
+    if (maxDepth !== null && depth > maxDepth) return null
+    const hasChildren = node.children.length > 0
+    const isCollapsed = collapsed.has(node.id)
+    return (
+      <div key={node.id}>
+        <div className="flex items-center gap-2 py-2" style={{ paddingLeft: `${depth * 20}px` }}>
+          {hasChildren ? (
+            <button onClick={() => toggleCollapse(node.id)} className="text-muted-foreground shrink-0" title={isCollapsed ? 'Expand' : 'Collapse'}>
+              <ChevronRight className={`w-3 h-3 transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
+            </button>
+          ) : (
+            <span className="w-3 shrink-0" />
+          )}
+          <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[node.status]}`} />
+          <p className="text-sm flex-1 truncate">{node.title}</p>
+          <span className="text-xs text-muted-foreground shrink-0">{STATUS_LABEL[node.status]}</span>
+          {node.due_date && <span className="text-xs text-muted-foreground shrink-0">{node.due_date}</span>}
+        </div>
+        {hasChildren && !isCollapsed && node.children.map((child) => renderNode(child, depth + 1))}
+      </div>
+    )
+  }
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-2xl mx-auto py-6 px-6">
-        <div className="flex flex-col divide-y">
-          {tasks.map((task) => (
-            <div key={task.id} className="flex items-center gap-3 py-2">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[task.status]}`} />
-              <p className="text-sm flex-1 truncate">{task.title}</p>
-              <span className="text-xs text-muted-foreground shrink-0">{STATUS_LABEL[task.status]}</span>
-              {task.due_date && <span className="text-xs text-muted-foreground shrink-0">{task.due_date}</span>}
-            </div>
+        <div className="flex items-center justify-end gap-1 mb-2">
+          {DEPTH_OPTIONS.map(({ label, maxDepth: value }) => (
+            <button
+              key={label}
+              onClick={() => setMaxDepth(value)}
+              className={`px-2 py-0.5 rounded text-xs ${maxDepth === value ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {label}
+            </button>
           ))}
+        </div>
+        <div className="flex flex-col divide-y">
+          {tree.map((node) => renderNode(node, 0))}
           {tasks.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">No tasks</p>}
         </div>
       </div>

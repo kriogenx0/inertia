@@ -7,10 +7,52 @@ class Task < ApplicationRecord
   # has no parent document at all ("just a task", not tied to a doc).
   belongs_to :folder, optional: true
 
+  # Subtasks, to any depth (top-level -> subtask -> sub-subtask -> ...).
+  # Destroying a task takes its own subtasks with it — they don't have much
+  # meaning floating around detached from the task they broke down.
+  belongs_to :parent, class_name: "Task", optional: true
+  has_many :subtasks, class_name: "Task", foreign_key: :parent_id, dependent: :destroy, inverse_of: :parent
+
   enum :status, { todo: 0, in_progress: 1, in_review: 2, done: 3, backlog: 4 }
 
   validates :title, presence: true
   validates :status, presence: true
+  validate :parent_is_not_self_or_a_descendant
 
   default_scope { order(:position) }
+
+  # How many levels below a top-level task this one sits (0 = top-level,
+  # 1 = subtask, 2 = sub-subtask, ...) — what TasksPage.tsx's "hide level 2
+  # / level 3" controls filter on. A plain Ruby walk up :parent, not a
+  # recursive SQL query — same reasoning as Folder#self_and_descendant_ids:
+  # simpler than a CTE, and task hierarchies are shallow in practice.
+  def depth
+    d = 0
+    current = parent
+    while current
+      d += 1
+      current = current.parent
+    end
+    d
+  end
+
+  private
+
+  def parent_is_not_self_or_a_descendant
+    return unless parent_id
+
+    if parent_id == id
+      errors.add(:parent_id, "can't be the task itself")
+      return
+    end
+
+    ancestor = parent
+    while ancestor
+      if ancestor.id == id
+        errors.add(:parent_id, "can't be one of this task's own subtasks")
+        return
+      end
+      ancestor = ancestor.parent
+    end
+  end
 end

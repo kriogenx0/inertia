@@ -43,6 +43,7 @@ export interface Task {
   document_id: number
   assignee_id: number | null
   epic_id: number | null
+  parent_id: number | null
   folder_id: number | null
   document?: Document
 }

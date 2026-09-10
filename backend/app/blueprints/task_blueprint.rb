@@ -6,6 +6,7 @@ class TaskBlueprint < Blueprinter::Base
   field :assignee_id
   field :epic_id
   field :folder_id
+  field :parent_id
 
   view :with_document do
     association :document, blueprint: DocumentBlueprint do |task, _options|

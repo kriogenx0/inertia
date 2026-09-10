@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_27_000006) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_10_164255) do
   create_table "documents", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
     t.json "content"
@@ -109,10 +109,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000006) do
     t.bigint "workspace_id", null: false
     t.bigint "epic_id"
     t.bigint "folder_id"
+    t.bigint "parent_id"
     t.index ["assignee_id"], name: "index_tasks_on_assignee_id"
     t.index ["document_id"], name: "index_tasks_on_document_id"
     t.index ["epic_id"], name: "index_tasks_on_epic_id"
     t.index ["folder_id"], name: "index_tasks_on_folder_id"
+    t.index ["parent_id"], name: "index_tasks_on_parent_id"
     t.index ["status"], name: "index_tasks_on_status"
     t.index ["workspace_id"], name: "index_tasks_on_workspace_id"
   end
@@ -152,6 +154,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_27_000006) do
   add_foreign_key "tasks", "documents"
   add_foreign_key "tasks", "epics"
   add_foreign_key "tasks", "folders"
+  add_foreign_key "tasks", "tasks", column: "parent_id"
   add_foreign_key "tasks", "users", column: "assignee_id"
   add_foreign_key "tasks", "workspaces"
   add_foreign_key "workspaces", "users"
