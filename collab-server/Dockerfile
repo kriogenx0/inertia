@@ -21,9 +21,10 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 
-RUN groupadd --system --gid 1000 collab && \
-    useradd collab --uid 1000 --gid 1000 --create-home --shell /bin/bash
-USER 1000:1000
+# node:22-slim already ships a non-root `node` user at uid/gid 1000 (unlike
+# backend/Dockerfile's ruby:slim base, which has neither) — creating another
+# one at the same uid/gid fails outright (exit code 4, "already in use").
+USER node
 
 EXPOSE 1234
 CMD ["node", "dist/index.js"]
