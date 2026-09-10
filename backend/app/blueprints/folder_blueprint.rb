@@ -16,5 +16,19 @@ class FolderBlueprint < Blueprinter::Base
       folder.children.active
     end
     association :documents, blueprint: DocumentBlueprint
+
+    # Sidebar indicator icons — see WorkspacesController#show, which
+    # precomputes these sets once for the whole tree instead of querying per
+    # folder. Falls back to empty sets so other renderers of this view
+    # (e.g. FoldersController) don't have to pass them.
+    field :has_tasks do |folder, options|
+      task_folder_ids = options[:task_folder_ids] || Set.new
+      task_document_ids = options[:task_document_ids] || Set.new
+      task_folder_ids.include?(folder.id) || folder.documents.any? { |d| task_document_ids.include?(d.id) }
+    end
+
+    field :has_events do |folder, options|
+      (options[:event_folder_ids] || Set.new).include?(folder.id)
+    end
   end
 end

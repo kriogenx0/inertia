@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { ChevronRight, Folder, FileText, TableIcon, Pin } from 'lucide-react'
+import { ChevronRight, Folder, FileText, TableIcon, Pin, CheckSquare, CalendarDays } from 'lucide-react'
 import {
   useCreateFolder, useCreateDocument, useDeleteFolder, useDeleteDocument,
   usePinFolder, usePinDocument, useUpdateFolder,
@@ -121,6 +121,16 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
           >
             {folder.name}
           </button>
+        )}
+        {folder.has_tasks && (
+          <span title="Has tasks" className="shrink-0 flex">
+            <CheckSquare className="w-2.5 h-2.5 text-muted-foreground" />
+          </span>
+        )}
+        {folder.has_events && (
+          <span title="Has events" className="shrink-0 flex">
+            <CalendarDays className="w-2.5 h-2.5 text-muted-foreground" />
+          </span>
         )}
         {folder.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
       </div>

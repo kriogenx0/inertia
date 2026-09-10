@@ -20,6 +20,11 @@ export interface Folder {
   archived_at: string | null
   children: Folder[]
   documents: Document[]
+  // Whether this folder (directly, or one of its own documents) has any
+  // tasks/events — drives the sidebar's indicator icons. See
+  // WorkspacesController#show / FolderBlueprint.
+  has_tasks: boolean
+  has_events: boolean
 }
 
 export interface Workspace {
