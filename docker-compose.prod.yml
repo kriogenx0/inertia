@@ -25,6 +25,10 @@ services:
     env_file: .env
     environment:
       RAILS_ENV: production
+      # Not a secret — used to build absolute ActiveStorage blob URLs from
+      # the Quip importer's background job, which has no request context to
+      # derive a host from the way a controller action would.
+      APP_URL: https://inertia.it.com
     ports:
       - "127.0.0.1:${HOST_PORT}:3000"
     volumes:

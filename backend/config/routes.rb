@@ -32,6 +32,8 @@ Rails.application.routes.draw do
         resources :event_tasks, only: [ :create, :destroy ]
       end
 
+      resources :quip_imports, only: [ :index, :create, :show ]
+
       resources :shares, only: [ :create, :show, :destroy ]
       get "shared/:token", to: "shares#access", as: :shared_access
     end

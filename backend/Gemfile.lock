@@ -323,6 +323,7 @@ DEPENDENCIES
   image_processing (~> 1.2)
   kaminari
   mysql2 (~> 0.5)
+  nokogiri
   puma (>= 5.0)
   pundit
   rack-cors

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
   Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
-  Plus, Target, Archive, ArchiveRestore, Keyboard,
+  Plus, Target, Archive, ArchiveRestore, Keyboard, Download,
 } from 'lucide-react'
 import {
   useWorkspace, useCreateFolder, useCreateDocument, usePinDocument, usePinFolder,
@@ -12,6 +12,8 @@ import {
 import { useCreateTask } from '@/api/tasks'
 import { useCreateEvent } from '@/api/events'
 import { useEpics } from '@/api/epics'
+import { useStartQuipImport, useQuipImport } from '@/api/quipImports'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/store/auth'
 import { useTabsStore } from '@/store/tabs'
 import { FolderItem } from './FolderItem'
@@ -81,6 +83,13 @@ export default function Sidebar() {
   const { data: archivedFolders = [] } = useArchivedFolders()
   const [accountOpen, setAccountOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [quipImportOpen, setQuipImportOpen] = useState(false)
+  const [quipToken, setQuipToken] = useState('')
+  const [quipDomain, setQuipDomain] = useState('quip.com')
+  const [startedQuipImportId, setStartedQuipImportId] = useState<number | null>(null)
+  const startQuipImport = useStartQuipImport()
+  const { data: quipImport } = useQuipImport(startedQuipImportId)
+  const qc = useQueryClient()
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [quickAddType, setQuickAddType] = useState<'task' | 'event'>('task')
   const [quickAddTitle, setQuickAddTitle] = useState('')
@@ -99,6 +108,8 @@ export default function Sidebar() {
   accountOpenRef.current = accountOpen
   const quickAddOpenRef = useRef(quickAddOpen)
   quickAddOpenRef.current = quickAddOpen
+  const quipImportOpenRef = useRef(quipImportOpen)
+  quipImportOpenRef.current = quipImportOpen
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -106,6 +117,12 @@ export default function Sidebar() {
 
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
   useEffect(() => { if (quickAddOpen) quickAddInputRef.current?.focus() }, [quickAddOpen])
+  // Refreshes the folder tree once imported content actually exists to
+  // show — polling every 1.5s in between would just re-render the same
+  // (empty-so-far) tree for no benefit.
+  useEffect(() => {
+    if (quipImport?.status === 'completed') qc.invalidateQueries({ queryKey: [ 'workspace' ] })
+  }, [ quipImport?.status ])
 
   function openQuickAdd() {
     setQuickAddType('task')
@@ -138,6 +155,7 @@ export default function Sidebar() {
         if (shortcutsOpenRef.current) setShortcutsOpen(false)
         else if (accountOpenRef.current) setAccountOpen(false)
         else if (quickAddOpenRef.current) setQuickAddOpen(false)
+        else if (quipImportOpenRef.current) setQuipImportOpen(false)
         return
       }
       if (!(e.metaKey || e.ctrlKey)) return
@@ -435,7 +453,14 @@ export default function Sidebar() {
                 <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 flex flex-col gap-2">
+              <button
+                onClick={() => { setAccountOpen(false); setQuipImportOpen(true) }}
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-md text-sm border hover:bg-accent"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Import from Quip
+              </button>
               <button
                 onClick={handleLogout}
                 className="w-full px-4 py-2 rounded-md text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 border border-red-200 dark:border-red-900"
@@ -443,6 +468,102 @@ export default function Sidebar() {
                 Sign out
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import from Quip */}
+      {quipImportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setQuipImportOpen(false)}>
+          <div className="bg-card border rounded-xl shadow-xl w-96 p-5 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-muted-foreground" />
+              <h2 className="font-semibold text-sm">Import from Quip</h2>
+            </div>
+
+            {!startedQuipImportId ? (
+              <>
+                <p className="text-xs text-muted-foreground -mt-2">
+                  Walks your Quip account's Desktop, Starred, and Shared folders and imports every document found,
+                  mirroring the folder structure, into your workspace root.
+                </p>
+                <label className="flex flex-col gap-1 text-sm">
+                  Quip API token
+                  <input
+                    type="password"
+                    autoFocus
+                    value={quipToken}
+                    onChange={(e) => setQuipToken(e.target.value)}
+                    placeholder="Paste your token"
+                    className="text-sm px-3 py-2 rounded-lg border border-input bg-background outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  Domain
+                  <select
+                    value={quipDomain}
+                    onChange={(e) => setQuipDomain(e.target.value)}
+                    className="text-sm px-3 py-2 rounded-lg border border-input bg-background outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="quip.com">quip.com</option>
+                    <option value="quip-apple.com">quip-apple.com</option>
+                  </select>
+                </label>
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setQuipImportOpen(false)}
+                    className="px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-accent"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      startQuipImport.mutate(
+                        { token: quipToken, domain: quipDomain },
+                        { onSuccess: (imp) => setStartedQuipImportId(imp.id) }
+                      )
+                    }}
+                    disabled={!quipToken.trim() || startQuipImport.isPending}
+                    className="px-3 py-1.5 rounded-md text-sm bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  >
+                    {startQuipImport.isPending ? 'Starting…' : 'Start import'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 text-sm">
+                  {(quipImport?.status === 'pending' || quipImport?.status === 'running') && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                  )}
+                  <span className="font-medium">
+                    {quipImport?.status === 'completed' && 'Done'}
+                    {quipImport?.status === 'failed' && 'Failed'}
+                    {(quipImport?.status === 'pending' || quipImport?.status === 'running' || !quipImport) && 'Importing…'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                  <span>{quipImport?.folders_created ?? 0} folders created</span>
+                  <span>{quipImport?.documents_imported ?? 0} documents imported</span>
+                  {!!quipImport?.documents_failed && <span>{quipImport.documents_failed} documents failed</span>}
+                </div>
+                {quipImport?.status === 'failed' && quipImport.error_message && (
+                  <p className="text-xs text-red-500 break-words">{quipImport.error_message}</p>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setQuipImportOpen(false)
+                      setStartedQuipImportId(null)
+                      setQuipToken('')
+                    }}
+                    className="px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:bg-accent"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

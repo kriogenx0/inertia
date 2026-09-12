@@ -25,6 +25,9 @@ gem "image_processing", "~> 1.2"
 # JSON serialization
 gem "blueprinter"
 
+# HTML parsing (Quip import — converting a thread's HTML into Tiptap JSON)
+gem "nokogiri"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"

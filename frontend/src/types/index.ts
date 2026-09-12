@@ -48,6 +48,20 @@ export interface Task {
   document?: Document
 }
 
+export interface QuipImport {
+  id: number
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  domain: string
+  destination_folder_id: number | null
+  folders_created: number
+  documents_imported: number
+  documents_failed: number
+  error_message: string | null
+  started_at: string | null
+  finished_at: string | null
+  created_at: string
+}
+
 export interface Epic {
   id: number
   title: string

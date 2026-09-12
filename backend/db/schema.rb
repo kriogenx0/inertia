@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_09_10_164255) do
+ActiveRecord::Schema[7.2].define(version: 2026_09_12_052255) do
   create_table "documents", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "title", null: false
     t.json "content"
@@ -83,6 +83,23 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_10_164255) do
     t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
   end
 
+  create_table "quip_imports", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "workspace_id", null: false
+    t.bigint "destination_folder_id"
+    t.integer "status", default: 0, null: false
+    t.string "domain", null: false
+    t.integer "folders_created", default: 0, null: false
+    t.integer "documents_imported", default: 0, null: false
+    t.integer "documents_failed", default: 0, null: false
+    t.text "error_message"
+    t.datetime "started_at"
+    t.datetime "finished_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["destination_folder_id"], name: "index_quip_imports_on_destination_folder_id"
+    t.index ["workspace_id"], name: "index_quip_imports_on_workspace_id"
+  end
+
   create_table "shares", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "token", null: false
     t.integer "permission", default: 0, null: false
@@ -150,6 +167,8 @@ ActiveRecord::Schema[7.2].define(version: 2026_09_10_164255) do
   add_foreign_key "events", "workspaces"
   add_foreign_key "folders", "folders", column: "parent_id"
   add_foreign_key "folders", "workspaces"
+  add_foreign_key "quip_imports", "folders", column: "destination_folder_id"
+  add_foreign_key "quip_imports", "workspaces"
   add_foreign_key "shares", "users", column: "created_by_id"
   add_foreign_key "tasks", "documents"
   add_foreign_key "tasks", "epics"
