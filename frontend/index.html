@@ -2,8 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets iOS report real env(safe-area-inset-*) values
+         (notch/home-indicator) instead of 0 — needed for the Capacitor iOS
+         shell and any other WKWebView; a no-op everywhere else. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Inertia</title>
+    <script>
+      // A crash before React ever mounts (e.g. a ReferenceError thrown while
+      // evaluating the bundle) otherwise leaves a silent blank white page —
+      // no console visible on a phone/tablet, nothing in the DOM to see.
+      // Found the hard way: a real "production" build shipped with dev-only
+      // react-refresh instrumentation active (see babel.config.js) crashed
+      // exactly this way, undetectable without a debugger attached. This is
+      // a last-resort net, not a replacement for fixing the actual bug.
+      window.addEventListener('error', function (e) {
+        showCrash(e.error && e.error.stack ? e.error.stack : e.message)
+      })
+      window.addEventListener('unhandledrejection', function (e) {
+        showCrash('Unhandled rejection: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason))
+      })
+      function showCrash(text) {
+        var root = document.getElementById('root')
+        if (root && root.childNodes.length) return // React already mounted something — a later runtime error is its own concern, not a blank-page one
+        document.body.insertAdjacentHTML(
+          'afterbegin',
+          '<pre style="white-space:pre-wrap;font:11px monospace;padding:12px;color:#b91c1c;background:#fff;margin:0">' +
+            String(text).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] }) +
+            '</pre>'
+        )
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

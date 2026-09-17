@@ -6,8 +6,8 @@
   "scripts": {
     "postinstall": "bash scripts/brand-electron-dev.sh",
     "dev": "webpack serve --mode development",
-    "build": "tsc -b && webpack --mode production",
-    "preview": "webpack serve --mode production",
+    "build": "NODE_ENV=production tsc -b && NODE_ENV=production webpack --mode production",
+    "preview": "NODE_ENV=production webpack serve --mode production",
     "electron:dev": "ELECTRON_DEV_SERVER_URL=http://localhost:5174 electron .",
     "electron:build-mac": "npm run build && electron-builder --mac",
     "test": "jest"
