@@ -23,7 +23,11 @@ services:
       REDIS_URL: redis://redis:6379
       RAILS_ENV: development
       JWT_SECRET_KEY: dev_secret_change_in_production
-      CORS_ORIGINS: http://localhost:5174
+      # capacitor://localhost is the iOS app's WKWebView origin (see
+      # frontend/capacitor.config.ts) — it bundles the same build Electron
+      # does, but under that origin instead of file://, so it needs an
+      # explicit CORS allow same as any other cross-origin API caller.
+      CORS_ORIGINS: http://localhost:5174,capacitor://localhost
       BYPASS_AUTH: "true"
       APP_URL: http://localhost:3000
     volumes:

@@ -85,7 +85,11 @@ echo "==> Writing runtime secrets and variables to .env"
 {
   write_env_var RAILS_ENV "${RAILS_ENV:-production}"
   write_env_var RAILS_MASTER_KEY "$RAILS_MASTER_KEY"
-  write_env_var CORS_ORIGINS "${CORS_ORIGINS:-https://$DOMAIN}"
+  # capacitor://localhost is the iOS app's WKWebView origin (bundled build,
+  # see frontend/capacitor.config.ts) — needs the same CORS allow the web
+  # origin gets. Regenerated fresh on every deploy, so this takes effect
+  # without touching anything already on the server.
+  write_env_var CORS_ORIGINS "${CORS_ORIGINS:-https://$DOMAIN,capacitor://localhost}"
   write_env_var HOST_PORT "$HOST_PORT"
   write_env_var COLLAB_PORT "$COLLAB_PORT"
   write_env_var SERVICE api

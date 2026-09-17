@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type CSSProperties, type ComponentType } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useSidebarStore } from '@/store/sidebar'
 import {
   FolderPlus, CheckSquare, FilePlus, FileText,
   Table as TableIcon, Pin, Folder, Loader2, CalendarDays,
@@ -75,6 +76,8 @@ export default function Sidebar() {
   const pinFolder = usePinFolder()
   const updateFolder = useUpdateFolder()
   const { user, logout } = useAuthStore()
+  const drawerOpen = useSidebarStore((s) => s.open)
+  const closeDrawer = useSidebarStore((s) => s.close)
   const createTask = useCreateTask()
   const createEvent = useCreateEvent()
   const { data: epics = [] } = useEpics()
@@ -110,10 +113,16 @@ export default function Sidebar() {
   quickAddOpenRef.current = quickAddOpen
   const quipImportOpenRef = useRef(quipImportOpen)
   quipImportOpenRef.current = quipImportOpen
+  const drawerOpenRef = useRef(drawerOpen)
+  drawerOpenRef.current = drawerOpen
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
     : '?'
+
+  // Closes the mobile drawer after navigating anywhere — otherwise it stays
+  // open over the page you just picked, which reads as broken on a phone.
+  useEffect(() => { closeDrawer() }, [location.pathname])
 
   useEffect(() => { if (addingFolder) folderInputRef.current?.focus() }, [addingFolder])
   useEffect(() => { if (quickAddOpen) quickAddInputRef.current?.focus() }, [quickAddOpen])
@@ -156,6 +165,7 @@ export default function Sidebar() {
         else if (accountOpenRef.current) setAccountOpen(false)
         else if (quickAddOpenRef.current) setQuickAddOpen(false)
         else if (quipImportOpenRef.current) setQuipImportOpen(false)
+        else if (drawerOpenRef.current) closeDrawer()
         return
       }
       if (!(e.metaKey || e.ctrlKey)) return
@@ -237,11 +247,23 @@ export default function Sidebar() {
   const isDocumentsSection = location.pathname === '/' || location.pathname.startsWith('/documents')
 
   return (
-    <div className="flex h-screen shrink-0">
+    <>
+      {/* Mobile-only backdrop — tap outside the drawer to close it. */}
+      {drawerOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/40 z-30" onClick={closeDrawer} />
+      )}
+      <div
+        className={`flex h-screen shrink-0 fixed md:static inset-y-0 left-0 z-40 transition-transform duration-200 ease-out md:translate-x-0 ${
+          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
       {/* Icon rail — top-level section nav. Traffic lights float over its
           top-left corner, so the top strip and the flexible middle spacer
           are both drag regions (nothing interactive sits in either). */}
-      <nav className="w-14 border-r bg-muted/30 flex flex-col items-center h-screen shrink-0">
+      <nav
+        className="w-14 border-r bg-muted/30 flex flex-col items-center h-screen shrink-0"
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         {isElectron && (
           <div className="h-8 w-full shrink-0" style={{ WebkitAppRegion: 'drag' } as CSSProperties} />
         )}
@@ -268,7 +290,10 @@ export default function Sidebar() {
       {/* Detail panel — Pinned + the Documents tree, the content that's
           actually unique to it now that Tasks/Events/Epics moved to the
           rail. */}
-      <aside className="w-60 border-r bg-muted/20 flex flex-col h-screen">
+      <aside
+        className="w-60 border-r bg-muted/20 flex flex-col h-screen"
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div
           className={`px-3 pb-3 flex items-center gap-2 ${isElectron ? 'pt-8' : 'pt-3'}`}
           style={{ WebkitAppRegion: 'drag' } as CSSProperties}
@@ -439,8 +464,13 @@ export default function Sidebar() {
           </div>
         </div>
       </aside>
+      </div>
 
-      {/* Account panel */}
+      {/* Account panel — a sibling of the drawer div above, not nested in
+          it: that div gets a CSS transform on mobile (the slide-in/out
+          animation), and position:fixed descendants of a transformed
+          ancestor are positioned relative to IT, not the viewport — these
+          modals would otherwise slide off with a closed drawer. */}
       {accountOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setAccountOpen(false)}>
           <div className="bg-card border rounded-xl shadow-xl w-80 p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
@@ -665,6 +695,6 @@ export default function Sidebar() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

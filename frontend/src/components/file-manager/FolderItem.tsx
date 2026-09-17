@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
-import { ChevronRight, Folder, FileText, TableIcon, Pin, CheckSquare, CalendarDays } from 'lucide-react'
+import { ChevronRight, Folder, FileText, TableIcon, Pin, CheckSquare, CalendarDays, MoreVertical } from 'lucide-react'
 import {
   useCreateFolder, useCreateDocument, useDeleteFolder, useDeleteDocument,
   usePinFolder, usePinDocument, useUpdateFolder,
@@ -39,6 +39,27 @@ function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: Me
         </button>
       ))}
     </div>
+  )
+}
+
+// Touch equivalent of right-click: opens the exact same ContextMenu/items,
+// positioned from the button's own rect instead of a mouse event. Always
+// visible below md (no hover to reveal it with), hover-reveal above it —
+// matching the row's existing group-hover affordances.
+function ActionsButton({ onOpen }: { onOpen: (pos: { x: number; y: number }) => void }) {
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const rect = e.currentTarget.getBoundingClientRect()
+        onOpen({ x: rect.right, y: rect.bottom + 4 })
+      }}
+      title="More actions"
+      className="shrink-0 p-0.5 rounded text-muted-foreground hover:bg-accent hover:text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100"
+    >
+      <MoreVertical className="w-3.5 h-3.5" />
+    </button>
   )
 }
 
@@ -133,6 +154,7 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
           </span>
         )}
         {folder.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
+        <ActionsButton onOpen={setFolderCtx} />
       </div>
 
       {folderCtx && <ContextMenu x={folderCtx.x} y={folderCtx.y} items={folderMenuItems} onClose={() => setFolderCtx(null)} />}
@@ -159,7 +181,7 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
               <Link
                 key={doc.id}
                 to={`/documents/${doc.id}`}
-                className={`flex items-center gap-1.5 w-full py-1 rounded-md text-sm hover:bg-accent ${active ? 'bg-accent' : ''}`}
+                className={`group flex items-center gap-1.5 w-full py-1 rounded-md text-sm hover:bg-accent ${active ? 'bg-accent' : ''}`}
                 style={{ paddingLeft: `${36 + indent}px`, paddingRight: '8px' }}
                 onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setDocCtx({ x: e.clientX, y: e.clientY, doc }) }}
               >
@@ -177,6 +199,7 @@ export function FolderItem({ folder, depth = 0 }: { folder: FolderType; depth?: 
                   <span className="flex-1 truncate text-left select-none">{doc.title}</span>
                 )}
                 {doc.pinned && <Pin className="w-2.5 h-2.5 text-muted-foreground shrink-0" />}
+                <ActionsButton onOpen={(pos) => setDocCtx({ ...pos, doc })} />
               </Link>
             )
           })}

@@ -54,6 +54,7 @@ import {
   Link as LinkIcon,
   Loader2,
   FileX,
+  Image as ImageIcon,
 } from 'lucide-react'
 import WorkspaceLayout from '@/components/WorkspaceLayout'
 import { useDocument, useUpdateDocument } from '@/api/documents'
@@ -365,6 +366,19 @@ export default function DocumentPage() {
     return res.data.url
   }
 
+  // Shared by the drag-and-drop handler below and the toolbar's picker
+  // button — a device with no drag source (a phone/tablet, no mouse) has no
+  // way to attach media at all without the latter.
+  async function insertMediaFile(file: File) {
+    if (!editor || !(file.type.startsWith('image/') || file.type.startsWith('video/'))) return
+    const url = await uploadFile(file)
+    if (file.type.startsWith('image/')) {
+      editor.chain().focus().setImage({ src: url }).run()
+    } else {
+      editor.chain().focus().insertContent({ type: 'video', attrs: { src: url } }).run()
+    }
+  }
+
   async function handleEditorDrop(e: React.DragEvent<HTMLDivElement>) {
     const files = Array.from(e.dataTransfer.files)
     if (!files.length || !editor) return
@@ -372,14 +386,14 @@ export default function DocumentPage() {
     if (!media.length) return
     e.preventDefault()
     e.stopPropagation()
-    for (const file of media) {
-      const url = await uploadFile(file)
-      if (file.type.startsWith('image/')) {
-        editor.chain().focus().setImage({ src: url }).run()
-      } else {
-        editor.chain().focus().insertContent({ type: 'video', attrs: { src: url } }).run()
-      }
-    }
+    for (const file of media) await insertMediaFile(file)
+  }
+
+  const mediaInputRef = useRef<HTMLInputElement>(null)
+  async function handleMediaInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    e.target.value = '' // allow picking the same file again later
+    for (const file of files) await insertMediaFile(file)
   }
 
   if (isLoading || !editor) {
@@ -547,6 +561,19 @@ export default function DocumentPage() {
             }}
             active={editor.isActive('link')}
             title="Link"
+          />
+          <ToolbarBtn
+            icon={<ImageIcon className="w-4 h-4" />}
+            onClick={() => mediaInputRef.current?.click()}
+            title="Insert image or video"
+          />
+          <input
+            ref={mediaInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            hidden
+            onChange={handleMediaInputChange}
           />
           <div className="ml-auto shrink-0 pr-2">
             {saveStatus === 'saving' && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}

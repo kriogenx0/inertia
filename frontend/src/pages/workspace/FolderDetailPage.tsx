@@ -198,7 +198,34 @@ function CalendarView({ events }: { events: WorkspaceEvent[] }) {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-      <div className="grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden max-w-3xl mx-auto">
+      {/* Phone-width agenda — the 7-column grid below gets unusably tiny
+          under ~430px (each cell shrinks to ~50px), so below md this
+          renders a plain date-grouped list of the same eventsByDate data
+          instead of forcing a scaled-down grid. */}
+      <div className="md:hidden max-w-3xl mx-auto flex flex-col">
+        {days.filter((d) => isSameMonth(d, month) && (eventsByDate.get(format(d, 'yyyy-MM-dd')) ?? []).length > 0).length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">No events this month</p>
+        )}
+        {days.filter((d) => isSameMonth(d, month)).map((day) => {
+          const key = format(day, 'yyyy-MM-dd')
+          const dayEvents = eventsByDate.get(key) ?? []
+          if (dayEvents.length === 0) return null
+          return (
+            <div key={key} className="flex gap-3 py-2 border-b last:border-0">
+              <div className={`w-16 shrink-0 text-sm ${isToday(day) ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                {format(day, 'EEE d')}
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                {dayEvents.map((e) => (
+                  <div key={e.id} className="text-sm bg-accent rounded px-2 py-1 truncate">{e.title}</div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="hidden md:grid grid-cols-7 gap-px bg-border rounded-lg overflow-hidden max-w-3xl mx-auto">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
           <div key={i} className="bg-muted text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
         ))}
